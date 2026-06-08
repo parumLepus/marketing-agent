@@ -1,0 +1,77 @@
+FRAMEWORK: AIDA
+
+Attention → Interest → Desire → Action
+Use for: sales emails, landing pages, ad copy
+Example: Get attention with a bold claim, build interest with data, create desire with benefits, close with a clear CTA.
+
+FRAMEWORK: PAS
+
+Problem → Agitation → Solution
+Use for: LinkedIn posts, email openers, blog intros
+Example: “Leads aren't converting (Problem). You're wasting budget on the wrong audience (Agitation). Here's a targeting fix that worked for 50+ B2B teams (Solution).”
+
+FRAMEWORK: StoryBrand
+
+Position the customer as the hero, your brand as the guide.
+Use for: website copy, pitch decks, brand messaging
+Structure: customer has a problem → meets a guide → gets a plan → takes action → avoids failure → achieves success.
+
+FRAMEWORK: TOFU–MOFU–BOFU
+
+Top → Middle → Bottom of Funnel
+Use for: content strategy, funnel planning
+
+TOFU: awareness content (education, virality)
+MOFU: trust-building (case studies, comparisons)
+BOFU: conversion content (offers, demos, CTAs)
+FRAMEWORK: BAB (Before–After–Bridge)
+
+Before → After → Bridge
+Use for: landing pages, ads, email marketing
+
+Before: current painful situation
+After: desired transformation
+Bridge: how your solution gets them there
+FRAMEWORK: AARRR Funnel
+
+Acquisition → Activation → Retention → Revenue → Referral
+Use for: growth strategy, SaaS, product marketing
+Focus: user journey optimisation and lifecycle growth
+
+FRAMEWORK: Hook–Story–Offer
+
+Hook → Story → Offer
+Use for: social media, video scripts, content marketing
+
+Hook: attention-grabbing statement
+Story: relatable narrative or insight
+Offer: CTA or conversion point
+FRAMEWORK: 4P Marketing Mix
+
+Product → Price → Place → Promotion
+Use for: go-to-market strategy and positioning
+Defines how a product is built, priced, distributed, and marketed.
+
+FRAMEWORK: 4U HEADLINE FORMULA
+
+Urgent → Useful → Unique → Ultra-specific
+Use for: headlines, ads, hooks
+Example: strong attention + clear benefit + specificity = higher CTR
+
+FRAMEWORK: BLUE OCEAN STRATEGY
+
+Compete → Differentiate → Create new demand
+Use for: positioning strategy
+Goal: avoid saturated markets and create new categories
+
+FRAMEWORK: USP STACK
+
+Unique → Specific → Provable
+Use for: messaging and positioning clarity
+A strong USP must be differentiated, measurable, and believable
+
+FRAMEWORK: CONTENT PILLAR SYSTEM
+
+Educational → Authority → Conversion → Engagement
+Use for: content planning and social media strategy
+Ensures balanced and scalable content output

@@ -1,0 +1,15 @@
+streamlit
+langchain
+langchain-openai
+langchain-community
+langchain-core
+langchain-classic
+sqlalchemy
+psycopg2-binary
+pandas
+python-dotenv
+openai
+ddgs
+pillow
+requests
+ChromaDB

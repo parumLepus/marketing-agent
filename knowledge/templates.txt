@@ -1,0 +1,65 @@
+TEMPLATE: LinkedIn Hook Formula
+
+Use this to grab attention in the first line.
+Pattern: Controversial statement + Proof + Promise
+Example: “Most B2B founders waste 80% of their ad budget. Here’s what the top 1% do differently.”
+
+TEMPLATE: Cold Email Subject Line
+
+Keep under 8 words. Personal + specific.
+Pattern: Pain + Specific insight
+Example: “3 reasons your leads aren’t converting”
+
+TEMPLATE: Cold Email Opening
+
+Use for outbound sales emails.
+Pattern: Personalisation + Observation + Relevance
+Example: “Noticed your team is scaling hiring — usually that’s when lead quality starts to drop. Thought this might help.”
+
+TEMPLATE: Sales Email Structure
+
+Use for conversion-focused emails.
+Pattern: Hook → Problem → Solution → Proof → CTA
+Example:
+
+Hook: “You’re losing leads daily”
+Problem: explain friction
+Solution: introduce fix
+Proof: results or case study
+CTA: book call / reply
+TEMPLATE: Landing Page Structure
+
+Use for high-conversion landing pages.
+Pattern: Hero → Problem → Solution → Benefits → Social Proof → CTA
+Example:
+Clear headline → pain amplification → solution intro → benefits list → testimonials → CTA button
+
+TEMPLATE: Instagram / LinkedIn Caption (B2B)
+
+Start strong, tell story, end with action.
+Pattern: Hook → Problem → Story → Lesson → CTA
+Example: “We almost lost 90% of leads in 30 days. Here’s what we fixed → [story] → Save this if you’re scaling.”
+
+TEMPLATE: Ad Copy (Paid Social)
+
+Use for Meta / LinkedIn ads.
+Pattern: Hook → Pain → Outcome → CTA
+Example: “Still struggling with low-quality leads? Here’s how B2B brands fix it in 14 days → Book a demo.”
+
+TEMPLATE: Value Proposition Formula
+
+Use for positioning clarity.
+Pattern: We help [audience] achieve [result] without [pain]
+Example: “We help real estate brands generate high-quality leads without wasting budget on low-intent traffic.”
+
+TEMPLATE: Case Study Story
+
+Use for credibility building.
+Pattern: Problem → Intervention → Result → Insight
+Example: “Client had low conversion rates → we redesigned funnel → leads increased 62% → key insight: messaging mismatch was the issue.”
+
+TEMPLATE: CTA Formula
+
+Use for all conversion points.
+Pattern: Action verb + benefit + urgency
+Example: “Get your free strategy breakdown in 24 hours”
