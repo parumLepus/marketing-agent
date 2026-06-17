@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .venv/
+client_secret.json
+credentials.json
+.DS_Store
