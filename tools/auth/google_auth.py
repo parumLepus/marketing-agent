@@ -6,7 +6,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive.file"
 ]
 
-REDIRECT_URI = "http://localhost:8501/oauth2callback"
+REDIRECT_URI = "https://anastasiia-marketing-agent.streamlit.app/oauth2callback"
 
 
 def get_google_auth_url():
