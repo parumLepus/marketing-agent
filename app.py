@@ -22,30 +22,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# =========================================================================
-# DETECT MANUAL REFRESH AND WIPE STATE (but never wipe on an OAuth
-# redirect coming back from Google or Notion).
-# =========================================================================
-#
-# WHY: Streamlit keeps st.session_state alive across a manual browser
-# refresh (F5) because the browser reuses its session cookie, which maps
-# back to the same server-side session object — including the LangChain
-# agent's conversation memory. That's why the agent kept "remembering" a
-# previous request (e.g. a logo) after a refresh and answering a new,
-# unrelated request (e.g. image analysis) as if it were still about the
-# old one.
-#
-# The OAuth round-trips (Google AND Notion) rely on that exact same
-# persistence on purpose, so we can't just stop persisting session_state —
-# we need to specifically tell apart "OAuth redirect landing back here"
-# from "the user just hit F5."
-#
-# The browser's Navigation Timing API can tell us with certainty whether
-# THIS page load was a reload. We ask it via a tiny JS snippet; if it
-# confirms a reload AND this isn't an OAuth callback, we do one silent
-# redirect that flags it, and the next run wipes session_state clean.
-# =========================================================================
-
 REFRESH_FLAG_PARAM = "_refreshed"
 
 
@@ -53,16 +29,12 @@ def _handle_manual_refresh():
     qp = st.query_params
 
     if qp.get(REFRESH_FLAG_PARAM) == "1":
-        # Confirmed reload, confirmed NOT an OAuth callback (checked below
-        # before this flag is ever set) -> wipe everything.
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.query_params.clear()
         return
 
     if "code" in qp:
-        # OAuth callback (Google or Notion) in progress — never treat as a
-        # refresh no matter how the browser got here.
         return
 
     components.html(
@@ -106,12 +78,20 @@ GOOGLE_SCOPES = [
 ]
 NOTION_SCOPES = ""
 
-REDIRECT_URI = st.secrets.get("REDIRECT_URI", os.getenv("REDIRECT_URI", "https://anastasiia-marketing-agent.streamlit.app/oauth2callback"))
-NOTION_CLIENT_ID = os.getenv("NOTION_CLIENT_ID")
-NOTION_CLIENT_SECRET = os.getenv("NOTION_CLIENT_SECRET")
-GOOGLE_SECRET = st.secrets["google"]
-GOOGLE_CLIENT_ID = GOOGLE_SECRET["client_id"]
-GOOGLE_CLIENT_SECRET = GOOGLE_SECRET["client_secret"]
+# Works locally (reads env var) AND on Streamlit Cloud (reads st.secrets)
+REDIRECT_URI = st.secrets.get("REDIRECT_URI", os.getenv("REDIRECT_URI", "http://localhost:8501"))
+NOTION_CLIENT_ID = st.secrets.get("NOTION_CLIENT_ID", os.getenv("NOTION_CLIENT_ID"))
+NOTION_CLIENT_SECRET = st.secrets.get("NOTION_CLIENT_SECRET", os.getenv("NOTION_CLIENT_SECRET"))
+
+# Load Google credentials: from st.secrets on Cloud, from file locally
+if "google" in st.secrets:
+    GOOGLE_CLIENT_ID = st.secrets["google"]["client_id"]
+    GOOGLE_CLIENT_SECRET = st.secrets["google"]["client_secret"]
+else:
+    with open("client_secret.json") as f:
+        _secret = json.load(f)["web"]
+    GOOGLE_CLIENT_ID = _secret["client_id"]
+    GOOGLE_CLIENT_SECRET = _secret["client_secret"]
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -200,15 +180,6 @@ def build_current_agent():
 
 
 def _current_creds_fingerprint():
-    """
-    A simple snapshot of every credential the agent's tools are built from.
-    Compared against what the EXISTING agent (if any) was built with, on
-    every script run, so a stale agent never silently survives a
-    credentials change. This replaces scattered "rebuild if X" checks
-    inside individual OAuth branches, which was the actual source of the
-    bug where Notion connected successfully in session_state but the
-    agent in use kept its original notion_token=None tools.
-    """
     google_token = getattr(st.session_state.creds, "token", None) if st.session_state.creds else None
     return (
         st.session_state.user_openai_key,
@@ -219,12 +190,6 @@ def _current_creds_fingerprint():
 
 
 def ensure_agent_is_current():
-    """
-    Call this every run, after credentials are known, before the agent is
-    used. Rebuilds the agent if (and only if) credentials actually changed
-    since it was last built, and re-seeds memory so the rebuild doesn't
-    lose conversation history.
-    """
     fingerprint = _current_creds_fingerprint()
     if (
         "agent" not in st.session_state
@@ -342,13 +307,14 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
         st.session_state.user_openai_key = state_data["key"]
     if state_data.get("messages") and len(st.session_state.messages) <= 1:
         st.session_state.messages = state_data["messages"]
+    if state_data.get("pending_action"):
+        if provider == "google":
+            st.session_state.pending_google_action = state_data["pending_action"]
+        elif provider == "notion":
+            st.session_state.pending_notion_action = state_data["pending_action"]
 
     if provider == "google" and not st.session_state.google_connected:
         try:
-            if state_data.get("pending_action"):
-                st.session_state.pending_google_action = state_data["pending_action"]
-
-
             token_response = http_requests.post(
                 "https://oauth2.googleapis.com/token",
                 data={
@@ -381,9 +347,6 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
 
     elif provider == "notion" and not st.session_state.notion_connected:
         try:
-            if state_data.get("pending_action"):
-                st.session_state.pending_notion_action = state_data["pending_action"]
-
             token_data = exchange_notion_code_for_token(
                 code=query_params["code"],
                 client_id=NOTION_CLIENT_ID,
@@ -403,6 +366,10 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
         except Exception as e:
             st.error(f"Notion OAuth failed: {e}")
 
+    # KEY FIX: rerun so session_state is fully populated before the API key
+    # check below runs — prevents the st.stop() from firing on OAuth return
+    st.rerun()
+
 # -------------------------
 # OPENAI API KEY CHECK + VALIDATION
 # -------------------------
@@ -413,7 +380,6 @@ def validate_openai_key(key: str) -> bool:
             headers={"Authorization": f"Bearer {key}"},
             timeout=5
         )
-
         return resp.status_code == 200
     except Exception:
         return False
@@ -550,11 +516,9 @@ notion_needed = (
     not st.session_state.notion_connected
 )
 
-# Mutual exclusivity: show ONLY the most recent/active request
 active_provider = None
 
 if google_needed and notion_needed:
-    # pick the most recent (you can improve this later with timestamps)
     active_provider = st.session_state.get("last_pending_provider", "google")
 elif google_needed:
     active_provider = "google"
@@ -562,8 +526,6 @@ elif notion_needed:
     active_provider = "notion"
 
 if active_provider == "google":
-    client_id = GOOGLE_CLIENT_ID
-    client_secret = GOOGLE_CLIENT_SECRET
 
     state_data = json.dumps({
         "provider": "google",
@@ -573,7 +535,7 @@ if active_provider == "google":
     })
 
     params = {
-        "client_id": client_id,
+        "client_id": GOOGLE_CLIENT_ID,
         "redirect_uri": REDIRECT_URI,
         "response_type": "code",
         "scope": " ".join(GOOGLE_SCOPES),
@@ -585,14 +547,21 @@ if active_provider == "google":
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
 
     if st.session_state.pending_google_action:
-        st.markdown("""
-        <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;">
-        <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
-        📄 Ready to create your Google Doc — just connect first:
-        </p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.link_button("👉 Connect Google & Create Doc", auth_url, use_container_width=True)
+        st.markdown(
+            f"""
+            <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;">
+                <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600">
+                📄 Ready to create your Google Doc — just connect first:
+                </p>
+                <a href="{auth_url}" target="_self"
+                   style="display:block;text-align:center;background:#4285F4;color:white;
+                   padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
+                   👉 Connect Google & Create Doc
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     else:
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
@@ -754,26 +723,3 @@ if user_input:
                     st.error(f"Agent crashed: {e}")
                     st.code(traceback.format_exc(), language="python")
                     st.session_state.messages.append({"role": "assistant", "content": "Something went wrong."})
-
-# =========================================================================
-# PRODUCTION DEPLOYMENT NOTES (Streamlit Community Cloud)
-#
-# 1. NEVER commit client_secret.json or real NOTION_CLIENT_ID/SECRET to the
-#    public repo. Use Streamlit's secrets manager (st.secrets) or env vars
-#    injected by the platform instead, and read them the same way you read
-#    OPENAI_API_KEY here. If you keep client_secret.json for Google, load it
-#    from st.secrets and write it to a temp file at startup, or refactor
-#    make_google_doc_tool / this OAuth block to read directly from st.secrets.
-#
-# 2. Remove `os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"` (or guard it
-#    behind an `if REDIRECT_URI.startswith("http://")` check) once deployed —
-#    Community Cloud serves over HTTPS, and this flag exists specifically to
-#    allow insecure local HTTP OAuth for development only.
-#
-# 3. Set REDIRECT_URI to your real deployed URL (e.g.
-#    https://yourapp.streamlit.app) via an env var / st.secrets entry, and
-#    register that SAME url as an authorized redirect URI in both the Google
-#    Cloud Console OAuth client AND the Notion integration's Redirect URIs
-#    list (you'll need to add it alongside the localhost one you already
-#    have, not replace it, so local dev keeps working too).
-# =========================================================================
