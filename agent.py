@@ -12,7 +12,6 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 import copy
 
-from tools.data_tool import get_marketing_data, list_database_tables
 from tools.search_tool import search_marketing_trends
 from tools.plan_tool import format_marketing_plan
 from tools.notion_tool import make_content_calendar_tool, make_update_content_calendar_tool
@@ -88,10 +87,8 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     update_content_calendar_tool = make_update_content_calendar_tool(notion_token)
 
     tools = [
-        list_database_tables,
         search_marketing_trends,
         format_marketing_plan,
-        get_marketing_data,
         content_calendar_tool,
         update_content_calendar_tool,
         search_knowledge_base,
