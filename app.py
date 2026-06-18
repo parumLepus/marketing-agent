@@ -566,8 +566,8 @@ elif notion_needed:
 
 if active_provider == "google":
 
-    with open("client_secret.json") as f:
-        secret = json.load(f)["web"]
+    client_id = secret["client_id"]
+    client_secret = secret["client_secret"]
 
     state_data = json.dumps({
         "provider": "google",
@@ -577,7 +577,7 @@ if active_provider == "google":
     })
 
     params = {
-        "client_id": secret["client_id"],
+        "client_id": client_id,
         "redirect_uri": REDIRECT_URI,
         "response_type": "code",
         "scope": " ".join(GOOGLE_SCOPES),
