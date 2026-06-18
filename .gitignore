@@ -5,3 +5,5 @@ __pycache__/
 client_secret.json
 credentials.json
 .DS_Store
+*.key
+secrets.json

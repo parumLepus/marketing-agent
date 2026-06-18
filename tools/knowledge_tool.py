@@ -1,4 +1,11 @@
 import os
+import sys
+import types
+
+_fake_trace_exporter = types.ModuleType("opentelemetry.exporter.otlp.proto.grpc.trace_exporter")
+_fake_trace_exporter.OTLPSpanExporter = object
+sys.modules["opentelemetry.exporter.otlp.proto.grpc.trace_exporter"] = _fake_trace_exporter
+
 import chromadb
 from chromadb.utils import embedding_functions
 from langchain.tools import tool
