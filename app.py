@@ -547,30 +547,30 @@ if active_provider == "google":
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
 
     if st.session_state.pending_google_action:
-        st.markdown(
+        components.html(
             f"""
-            <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;">
-                <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600">
+            <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;font-family:sans-serif;">
+                <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
                 📄 Ready to create your Google Doc — just connect first:
                 </p>
-                <a href="{auth_url}" target="_self"
+                <a href="{auth_url}" target="_top"
                    style="display:block;text-align:center;background:#4285F4;color:white;
                    padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
                    👉 Connect Google & Create Doc
                 </a>
             </div>
             """,
-            unsafe_allow_html=True
+            height=110,
         )
     else:
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
-            st.markdown(
-                f'<a href="{auth_url}" target="_self" '
+            components.html(
+                f'<a href="{auth_url}" target="_top" '
                 f'style="display:block;text-align:center;background:#4285F4;color:white;'
-                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
+                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;font-family:sans-serif;">'
                 f'👉 Continue with Google</a>',
-                unsafe_allow_html=True
+                height=50,
             )
 
 
@@ -594,30 +594,30 @@ elif active_provider == "notion":
     notion_auth_url = "https://api.notion.com/v1/oauth/authorize?" + urllib.parse.urlencode(notion_params)
 
     if st.session_state.pending_notion_action:
-        st.markdown(
+        components.html(
             f"""
-            <div style="background:#2d2440;border:1px solid #9b87f5;border-radius:10px;padding:1rem;">
-                <p style="margin:0 0 0.5rem 0;color:#e3d9ff;font-weight:600">
+            <div style="background:#2d2440;border:1px solid #9b87f5;border-radius:10px;padding:1rem;font-family:sans-serif;">
+                <p style="margin:0 0 0.5rem 0;color:#e3d9ff;font-weight:600;">
                 🗒️ Ready to build your content calendar — just connect first:
                 </p>
-                <a href="{notion_auth_url}" target="_self"
+                <a href="{notion_auth_url}" target="_top"
                    style="display:block;text-align:center;background:#000;color:white;
                    padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
                    👉 Connect Notion & Build Calendar
                 </a>
             </div>
             """,
-            unsafe_allow_html=True
+            height=110,
         )
     else:
         with st.popover("🔗 Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
-            st.markdown(
-                f'<a href="{notion_auth_url}" target="_self" '
+            components.html(
+                f'<a href="{notion_auth_url}" target="_top" '
                 f'style="display:block;text-align:center;background:#000;color:white;'
-                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
+                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;font-family:sans-serif;">'
                 f'👉 Continue with Notion</a>',
-                unsafe_allow_html=True
+                height=50,
             )
 # -------------------------
 # IMAGE UPLOAD
