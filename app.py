@@ -109,6 +109,10 @@ NOTION_SCOPES = ""
 REDIRECT_URI = os.getenv("REDIRECT_URI", "https://anastasiia-marketing-agent.streamlit.app/")
 NOTION_CLIENT_ID = os.getenv("NOTION_CLIENT_ID")
 NOTION_CLIENT_SECRET = os.getenv("NOTION_CLIENT_SECRET")
+GOOGLE_SECRET = st.secrets["google"]
+GOOGLE_CLIENT_ID = GOOGLE_SECRET["client_id"]
+GOOGLE_CLIENT_SECRET = GOOGLE_SECRET["client_secret"]
+
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -345,16 +349,13 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
             if state_data.get("pending_action"):
                 st.session_state.pending_google_action = state_data["pending_action"]
 
-            secret = st.secrets["google"]
-            client_id = secret["client_id"]
-            client_secret = secret["client_secret"]
 
             token_response = http_requests.post(
                 "https://oauth2.googleapis.com/token",
                 data={
                     "code": query_params["code"],
-                    "client_id": client_id,
-                    "client_secret": client_secret,
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
                     "redirect_uri": REDIRECT_URI,
                     "grant_type": "authorization_code",
                 }
@@ -368,8 +369,8 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                     token=token_data["access_token"],
                     refresh_token=token_data.get("refresh_token"),
                     token_uri="https://oauth2.googleapis.com/token",
-                    client_id=secret["client_id"],
-                    client_secret=secret["client_secret"],
+                    client_id=GOOGLE_CLIENT_ID,
+                    client_secret=GOOGLE_CLIENT_SECRET,
                     scopes=GOOGLE_SCOPES
                 )
                 st.session_state.creds = creds
@@ -566,8 +567,8 @@ elif notion_needed:
 
 if active_provider == "google":
 
-    client_id = secret["client_id"]
-    client_secret = secret["client_secret"]
+    client_id = GOOGLE_CLIENT_ID
+    client_secret = GOOGLE_CLIENT_SECRET
 
     state_data = json.dumps({
         "provider": "google",
