@@ -593,7 +593,8 @@ if active_provider == "google":
                 <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600">
                 📄 Ready to create your Google Doc — just connect first:
                 </p>
-                <a href="{auth_url}" target="_self"
+                <a href="#" 
+                   onclick="window.top.location.href='{auth_url}'; return false;"
                    style="display:block;text-align:center;background:#4285F4;color:white;
                    padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
                    👉 Connect Google & Create Doc
