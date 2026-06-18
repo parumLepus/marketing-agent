@@ -596,7 +596,7 @@ if active_provider == "google":
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
             st.markdown(
-                f'<a href="{auth_url}" target="_self" '
+                f'<a href="{auth_url}" target="_blank" '
                 f'style="display:block;text-align:center;background:#4285F4;color:white;'
                 f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
                 f'👉 Continue with Google</a>',
