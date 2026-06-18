@@ -567,7 +567,9 @@ if active_provider == "google":
 
     state_data = json.dumps({
         "provider": "google",
-        "session_id": st.session_state.session_id
+        "key": st.session_state.user_openai_key,
+        "messages": trim_messages_for_url(st.session_state.messages),
+        "pending_action": st.session_state.pending_google_action,
     })
 
     params = {
