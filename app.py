@@ -14,9 +14,7 @@ from agent import build_agent
 from tools.image_generation_tool import get_last_generated_image
 from tools.notion_tool import exchange_notion_code_for_token, find_accessible_page_id
 from langchain_core.messages import HumanMessage
-st.write("Query params:", dict(st.query_params))
-st.write("Google connected:", st.session_state.get("google_connected"))
-st.write("Pending action:", st.session_state.get("pending_google_action"))
+
 
 st.set_page_config(
     page_title="Your helpful Marketing Friend",
@@ -587,16 +585,26 @@ if active_provider == "google":
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
 
     if st.session_state.pending_google_action:
-        st.html(
-            f'''<div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;margin-bottom:0.5rem">
-            <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600">📄 Ready to create your Google Doc — just connect first:</p>
-            <a href="{auth_url}" target="_top" style="display:inline-block;width:100%;text-align:center;background-color:#4285F4;color:white;padding:0.6rem 1rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;box-sizing:border-box;">👉 Connect Google &amp; Create Doc</a></div>'''
+        st.markdown(
+            f"""
+            <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;">
+                <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600">
+                📄 Ready to create your Google Doc — just connect first:
+                </p>
+                <a href="{auth_url}" target="_blank"
+                   style="display:block;text-align:center;background:#4285F4;color:white;
+                   padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
+                   👉 Connect Google & Create Doc
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
     else:
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
             st.markdown(
-                f'<a href="{auth_url}" target="_blank" '
+                f'<a href="{auth_url}" target="_self" '
                 f'style="display:block;text-align:center;background:#4285F4;color:white;'
                 f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
                 f'👉 Continue with Google</a>',
