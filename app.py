@@ -1,7 +1,7 @@
-import streamlit as st
-import streamlit.components.v1 as components
 import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+import streamlit as st
+import streamlit.components.v1 as components
 import secrets
 import base64
 from PIL import Image
