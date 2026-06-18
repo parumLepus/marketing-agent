@@ -589,19 +589,14 @@ if active_provider == "google":
     if st.session_state.pending_google_action:
         components.html(
             f"""
-            <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;font-family:sans-serif;">
-                <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
-                📄 Ready to create your Google Doc — just connect first:
-                </p>
-                <a href="{auth_url}"
-                   onclick="window.top.location.href='{auth_url}'; return false;"
-                   style="display:block;text-align:center;background:#4285F4;color:white;
-                   padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;cursor:pointer;">
-                   👉 Connect Google & Create Doc
-                </a>
-            </div>
+            <a href="{auth_url}" target="_top"
+               style="display:block;text-align:center;background:#4285F4;color:white;
+               padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;
+               font-family:sans-serif;">
+               👉 Connect Google & Create Doc
+            </a>
             """,
-            height=100,
+            height=60,
         )
     else:
         with st.popover("🔗 Connect Google Drive"):
