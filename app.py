@@ -106,7 +106,7 @@ GOOGLE_SCOPES = [
 ]
 NOTION_SCOPES = ""
 
-REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8501")
+REDIRECT_URI = os.getenv("REDIRECT_URI", "https://anastasiia-marketing-agent.streamlit.app/")
 NOTION_CLIENT_ID = os.getenv("NOTION_CLIENT_ID")
 NOTION_CLIENT_SECRET = os.getenv("NOTION_CLIENT_SECRET")
 
@@ -345,15 +345,16 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
             if state_data.get("pending_action"):
                 st.session_state.pending_google_action = state_data["pending_action"]
 
-            with open("client_secret.json") as f:
-                secret = json.load(f)["web"]
+            secret = st.secrets["google"]
+            client_id = secret["client_id"]
+            client_secret = secret["client_secret"]
 
             token_response = http_requests.post(
                 "https://oauth2.googleapis.com/token",
                 data={
                     "code": query_params["code"],
-                    "client_id": secret["client_id"],
-                    "client_secret": secret["client_secret"],
+                    "client_id": client_id,
+                    "client_secret": client_secret,
                     "redirect_uri": REDIRECT_URI,
                     "grant_type": "authorization_code",
                 }
