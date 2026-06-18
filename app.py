@@ -341,7 +341,6 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                 st.session_state.creds = creds
                 st.session_state.google_connected = True
                 st.session_state.show_google_success = True
-                st.query_params.clear()
         except Exception as e:
             st.error(f"Google OAuth failed: {e}")
 
@@ -362,12 +361,15 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                 st.session_state.notion_page_id = find_accessible_page_id(notion_token)
                 st.session_state.notion_connected = True
                 st.session_state.show_notion_success = True
-                st.query_params.clear()
         except Exception as e:
             st.error(f"Notion OAuth failed: {e}")
 
-    # KEY FIX: rerun so session_state is fully populated before the API key
-    # check below runs — prevents the st.stop() from firing on OAuth return
+    # Always rerun after OAuth — on second pass query_params still has the
+    # code so key/messages/pending_action are restored again, but
+    # google_connected/notion_connected are already True so token exchange
+    # is skipped. Clear params only once connected AND key is present.
+    if (st.session_state.google_connected or st.session_state.notion_connected) and st.session_state.user_openai_key:
+        st.query_params.clear()
     st.rerun()
 
 # -------------------------
