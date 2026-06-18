@@ -113,7 +113,6 @@ GOOGLE_SECRET = st.secrets["google"]
 GOOGLE_CLIENT_ID = GOOGLE_SECRET["client_id"]
 GOOGLE_CLIENT_SECRET = GOOGLE_SECRET["client_secret"]
 
-
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # -------------------------
@@ -369,8 +368,8 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                     token=token_data["access_token"],
                     refresh_token=token_data.get("refresh_token"),
                     token_uri="https://oauth2.googleapis.com/token",
-                    client_id=GOOGLE_CLIENT_ID,
-                    client_secret=GOOGLE_CLIENT_SECRET,
+                    client_id=GOOGLE_CLIENT_ID["client_id"],
+                    client_secret=GOOGLE_SECRET["client_secret"],
                     scopes=GOOGLE_SCOPES
                 )
                 st.session_state.creds = creds
@@ -397,9 +396,6 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
             else:
                 notion_token = token_data["access_token"]
                 st.session_state.notion_token = notion_token
-                # Notion's token response doesn't hand back a ready-to-use
-                # page_id directly — resolve it via Search for whatever the
-                # user shared during consent.
                 st.session_state.notion_page_id = find_accessible_page_id(notion_token)
                 st.session_state.notion_connected = True
                 st.session_state.show_notion_success = True
@@ -567,8 +563,8 @@ elif notion_needed:
 
 if active_provider == "google":
 
-    client_id = GOOGLE_CLIENT_ID
-    client_secret = GOOGLE_CLIENT_SECRET
+    client_id = GOOGLE_CLIENT_ID["client_id"]
+    client_secret = GOOGLE_SECRET["client_secret"]
 
     state_data = json.dumps({
         "provider": "google",
