@@ -106,7 +106,7 @@ GOOGLE_SCOPES = [
 ]
 NOTION_SCOPES = ""
 
-REDIRECT_URI = os.getenv("REDIRECT_URI", "https://anastasiia-marketing-agent.streamlit.app/oauth2callback")
+REDIRECT_URI = st.secrets.get("REDIRECT_URI", os.getenv("REDIRECT_URI", "https://anastasiia-marketing-agent.streamlit.app/oauth2callback"))
 NOTION_CLIENT_ID = os.getenv("NOTION_CLIENT_ID")
 NOTION_CLIENT_SECRET = os.getenv("NOTION_CLIENT_SECRET")
 GOOGLE_SECRET = st.secrets["google"]
