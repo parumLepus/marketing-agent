@@ -583,9 +583,7 @@ if active_provider == "google":
     }
 
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
-    st.write("Google Client ID:", GOOGLE_CLIENT_ID)
-    st.write("Redirect URI:", REDIRECT_URI)
-    st.write("Auth URL:", auth_url)
+
     if st.session_state.pending_google_action:
         st.markdown(
             f"""
