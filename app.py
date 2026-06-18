@@ -587,16 +587,20 @@ if active_provider == "google":
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
 
     if st.session_state.pending_google_action:
-        components.html(
+        st.markdown(
             f"""
-            <a href="{auth_url}" target="_top"
-               style="display:block;text-align:center;background:#4285F4;color:white;
-               padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;
-               font-family:sans-serif;">
-               👉 Connect Google & Create Doc
-            </a>
+            <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;">
+                <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600">
+                📄 Ready to create your Google Doc — just connect first:
+                </p>
+                <a href="{auth_url}" target="_blank"
+                   style="display:block;text-align:center;background:#4285F4;color:white;
+                   padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
+                   👉 Connect Google & Create Doc
+                </a>
+            </div>
             """,
-            height=60,
+            unsafe_allow_html=True
         )
     else:
         with st.popover("🔗 Connect Google Drive"):
