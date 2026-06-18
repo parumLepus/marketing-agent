@@ -14,7 +14,9 @@ from agent import build_agent
 from tools.image_generation_tool import get_last_generated_image
 from tools.notion_tool import exchange_notion_code_for_token, find_accessible_page_id
 from langchain_core.messages import HumanMessage
-
+st.write("Query params:", dict(st.query_params))
+st.write("Google connected:", st.session_state.get("google_connected"))
+st.write("Pending action:", st.session_state.get("pending_google_action"))
 
 st.set_page_config(
     page_title="Your helpful Marketing Friend",
