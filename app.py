@@ -368,8 +368,8 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                     token=token_data["access_token"],
                     refresh_token=token_data.get("refresh_token"),
                     token_uri="https://oauth2.googleapis.com/token",
-                    client_id=GOOGLE_CLIENT_ID["client_id"],
-                    client_secret=GOOGLE_SECRET["client_secret"],
+                    client_id=GOOGLE_CLIENT_ID,
+                    client_secret=GOOGLE_CLIENT_SECRET,
                     scopes=GOOGLE_SCOPES
                 )
                 st.session_state.creds = creds
@@ -562,9 +562,8 @@ elif notion_needed:
     active_provider = "notion"
 
 if active_provider == "google":
-
-    client_id = GOOGLE_CLIENT_ID["client_id"]
-    client_secret = GOOGLE_SECRET["client_secret"]
+    client_id = GOOGLE_CLIENT_ID
+    client_secret = GOOGLE_CLIENT_SECRET
 
     state_data = json.dumps({
         "provider": "google",
