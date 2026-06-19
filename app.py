@@ -595,7 +595,7 @@ if active_provider == "google":
         <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
         📄 Ready to create your Google Doc — just connect first:
         </p>
-        <a href="{auth_url}" target="_self"
+        <a href="{auth_url}" target="_top"
            style="display:block;text-align:center;background:#4285F4;color:white;
            padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
            👉 Connect Google & Create Doc
@@ -606,7 +606,7 @@ if active_provider == "google":
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
             st.markdown(
-                f'<a href="{auth_url}" target="_self" '
+                f'<a href="{auth_url}" target="_top" '
                 f'style="display:block;text-align:center;background:#4285F4;color:white;'
                 f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
                 f'👉 Continue with Google</a>',
@@ -637,18 +637,28 @@ elif active_provider == "notion":
     notion_auth_url = "https://api.notion.com/v1/oauth/authorize?" + urllib.parse.urlencode(notion_params)
 
     if st.session_state.pending_notion_action:
-        st.markdown("""
+        st.markdown(f"""
         <div style="background:#2d2440;border:1px solid #9b87f5;border-radius:10px;padding:1rem;margin-bottom:0.5rem;">
-        <p style="margin:0;color:#e3d9ff;font-weight:600;">
+        <p style="margin:0 0 0.5rem 0;color:#e3d9ff;font-weight:600;">
         🗒️ Ready to build your content calendar — just connect first:
         </p>
+        <a href="{notion_auth_url}" target="_top"
+           style="display:block;text-align:center;background:#000;color:white;
+           padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
+           👉 Connect Notion & Build Calendar
+        </a>
         </div>
         """, unsafe_allow_html=True)
-        st.link_button("👉 Connect Notion & Build Calendar", notion_auth_url, use_container_width=True)
     else:
         with st.popover("🔗 Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
-            st.link_button("👉 Continue with Notion", notion_auth_url, use_container_width=True)
+            st.markdown(
+                f'<a href="{notion_auth_url}" target="_top" '
+                f'style="display:block;text-align:center;background:#000;color:white;'
+                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
+                f'👉 Continue with Notion</a>',
+                unsafe_allow_html=True
+            )
 # -------------------------
 # IMAGE UPLOAD
 # -------------------------
