@@ -5,6 +5,23 @@ from langchain.tools import tool
 NOTION_VERSION = "2022-06-28"
 
 
+def _add_comment(headers: dict, page_id: str, text: str):
+    """Best-effort: attach the full post detail as a comment on its page. Swallows
+    failures (e.g. the integration lacks comment-insert capability) since the row
+    itself was already created successfully and shouldn't be reported as failed."""
+    try:
+        requests.post(
+            "https://api.notion.com/v1/comments",
+            headers=headers,
+            json={
+                "parent": {"page_id": page_id},
+                "rich_text": [{"text": {"content": text[:2000]}}],
+            },
+        )
+    except Exception:
+        pass
+
+
 def make_content_calendar_tool(notion_token: str, notion_page_id: str):
     """
     Factory that builds a create_content_calendar tool bound to ONE specific
@@ -31,13 +48,18 @@ def make_content_calendar_tool(notion_token: str, notion_page_id: str):
         """
         Creates a content calendar database in Notion from a marketing plan.
         Input must be a JSON string with a list of posts.
-        Each post must have: date (YYYY-MM-DD), platform, content, status.
+        Each post must have: date (YYYY-MM-DD), platform, name, content, status.
+        "name" is a short idea title (a few words) - this becomes the row's
+        title in Notion. "content" is the full post detail (hook/problem/
+        solution/CTA, caption, whatever the format is) - this gets attached
+        as a comment on the row instead of the title, so the calendar stays
+        scannable at a glance.
         Call this when the user asks to save or create a content plan in Notion.
 
         Example input:
         [
-            {"date": "2026-06-10", "platform": "Instagram", "content": "Post text here", "status": "Draft"},
-            {"date": "2026-06-12", "platform": "LinkedIn", "content": "Post text here", "status": "Draft"}
+            {"date": "2026-06-10", "platform": "Instagram", "name": "Feature walkthrough hook", "content": "Hook: ...\\nProblem: ...\\nSolution: ...\\nCTA: ...", "status": "Draft"},
+            {"date": "2026-06-12", "platform": "LinkedIn", "name": "Customer proof post", "content": "Full post text here", "status": "Draft"}
         ]
         """
         if not notion_token or not notion_page_id:
@@ -95,7 +117,8 @@ def make_content_calendar_tool(notion_token: str, notion_page_id: str):
 
             database_id = db_response.json()["id"]
 
-            # Step 2 — Add each post as a row
+            # Step 2 — Add each post as a row, name as the title and the full
+            # detail as a comment on that row
             for post in posts:
                 page_response = requests.post(
                     "https://api.notion.com/v1/pages",
@@ -104,7 +127,7 @@ def make_content_calendar_tool(notion_token: str, notion_page_id: str):
                         "parent": {"database_id": database_id},
                         "properties": {
                             "Post Content": {
-                                "title": [{"text": {"content": post["content"]}}]
+                                "title": [{"text": {"content": post.get("name", post["content"])}}]
                             },
                             "Platform": {
                                 "select": {"name": post["platform"]}
@@ -121,6 +144,8 @@ def make_content_calendar_tool(notion_token: str, notion_page_id: str):
 
                 if page_response.status_code != 200:
                     return f"Failed to add post: {page_response.text}"
+
+                _add_comment(headers, page_response.json()["id"], post["content"])
 
             notion_url = f"https://www.notion.so/{database_id.replace('-', '')}"
             return json.dumps({
@@ -163,7 +188,8 @@ def make_update_content_calendar_tool(notion_token: str):
         database_id: the id of the existing Notion database (from the
         notion_url returned by create_content_calendar).
         plan_json: JSON string, same shape as create_content_calendar's input
-        — a list of new posts to add.
+        — a list of new posts to add, each with date, platform, name,
+        content, status.
         """
         if not notion_token:
             return json.dumps({
@@ -185,7 +211,7 @@ def make_update_content_calendar_tool(notion_token: str):
                         "parent": {"database_id": database_id},
                         "properties": {
                             "Post Content": {
-                                "title": [{"text": {"content": post["content"]}}]
+                                "title": [{"text": {"content": post.get("name", post["content"])}}]
                             },
                             "Platform": {
                                 "select": {"name": post["platform"]}
@@ -206,6 +232,8 @@ def make_update_content_calendar_tool(notion_token: str):
                     })
                 if page_response.status_code != 200:
                     return f"Failed to add post: {page_response.text}"
+
+                _add_comment(headers, page_response.json()["id"], post["content"])
 
             notion_url = f"https://www.notion.so/{database_id.replace('-', '')}"
             return json.dumps({
