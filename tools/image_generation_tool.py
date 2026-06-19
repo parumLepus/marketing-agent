@@ -6,14 +6,19 @@ import tempfile
 from datetime import datetime
 from langchain_core.tools import StructuredTool
 
-# Global temp store — app.py reads from here after tool runs
-_last_generated_image = {}
-
-def get_last_generated_image():
-    return _last_generated_image.copy()
 
 def make_image_generation_tool(creds=None, openai_api_key=None):
     api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+
+    # Per-session store, not module-level - a module-level dict was shared
+    # across every user on the server, so one person's generated image
+    # could leak into another session, and a stale image from an earlier
+    # turn kept reappearing on every later reply in the same conversation
+    # since nothing ever cleared it.
+    _last_generated_image = {}
+
+    def get_last_generated_image():
+        return _last_generated_image.copy()
     def generate_marketing_image(
         prompt: str,
         style: str = "professional marketing",
@@ -133,4 +138,4 @@ def make_image_generation_tool(creds=None, openai_api_key=None):
         description="Generate multiple campaign visuals (hero banner, social post, email header) for a marketing campaign.",
     )
 
-    return image_tool, campaign_visuals_tool
+    return image_tool, campaign_visuals_tool, get_last_generated_image

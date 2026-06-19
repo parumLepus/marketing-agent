@@ -78,7 +78,7 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     )
 
     google_doc_tool = make_google_doc_tool(creds)
-    image_tool, campaign_visuals_tool = make_image_generation_tool(creds=creds)
+    image_tool, campaign_visuals_tool, get_last_generated_image = make_image_generation_tool(creds=creds)
 
     # Per-user Notion tools, bound to THIS user's token/page rather than a
     # shared module-level NOTION_TOKEN. If notion_token/notion_page_id are
@@ -336,6 +336,13 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     Never invent or guess tool outputs — URLs, doc IDs, page links, confirmations must come only from
     an actual successful tool response. No tool result = no "Done," no link, no simulated completion.
 
+    The reverse matters just as much: when a tool succeeds AND returns a URL (notion_url, a Google Doc
+    link, a Drive webViewLink, etc.), always include that exact URL in your reply. Never say "Done" or
+    describe something as created without also giving its link if the tool handed one back — and if
+    asked for the link afterward and it's not in the visible chat history, that means it was dropped
+    from an earlier reply, not that the link doesn't exist; check the most recent successful tool
+    result for it rather than telling the user you don't have it.
+
     GOOGLE DOCS AUTH FALLBACK: if create_google_doc returns "auth_required" / "not connected" /
     GOOGLE_NOT_CONNECTED — don't describe it as an error and don't fall back to showing the strategy in
     chat. Say (adapt naturally): "To create the Google Doc, you'll need to connect your Google Drive
@@ -415,9 +422,13 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
         return_intermediate_steps=True,
     )
 
-    return RunnableWithMessageHistory(
+    runnable = RunnableWithMessageHistory(
         agent_executor,
         get_session_history,
         input_messages_key="input",
         history_messages_key="chat_history",
     )
+    # RunnableWithMessageHistory is a Pydantic model and rejects attributes
+    # it doesn't declare, so the per-session image getter has to travel
+    # alongside it rather than attached to it.
+    return runnable, get_last_generated_image

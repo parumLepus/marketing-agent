@@ -11,7 +11,6 @@ import urllib.parse
 import requests as http_requests
 from google.oauth2.credentials import Credentials
 from agent import build_agent
-from tools.image_generation_tool import get_last_generated_image
 from tools.notion_tool import exchange_notion_code_for_token, find_accessible_page_id
 from langchain_core.messages import HumanMessage
 
@@ -267,7 +266,7 @@ def ensure_agent_is_current():
         "agent" not in st.session_state
         or st.session_state.get("_agent_fingerprint") != fingerprint
     ):
-        st.session_state.agent = build_current_agent()
+        st.session_state.agent, st.session_state.get_last_generated_image = build_current_agent()
         st.session_state._agent_fingerprint = fingerprint
         seed_agent_memory(st.session_state.agent, st.session_state.messages)
 
@@ -292,18 +291,17 @@ def run_agent(prompt: str) -> dict:
     )
     answer = response["output"]
 
-    img_data = get_last_generated_image()
-    generated_image_b64 = img_data.get("image_b64")
-    drive_url = img_data.get("drive_url")
-    campaign_visuals = img_data.get("campaign_visuals", [])
-
     needs_google_connect = False
     needs_notion_connect = False
+    image_tool_called = False
 
     for step in response.get("intermediate_steps", []):
         tool_action = step[0] if isinstance(step, tuple) else None
         tool_output = step[1] if isinstance(step, tuple) else None
         tool_name = getattr(tool_action, "tool", "unknown")
+
+        if tool_name in ("generate_marketing_image", "generate_campaign_visuals"):
+            image_tool_called = True
 
         parsed_output = tool_output
         if isinstance(tool_output, str):
@@ -320,6 +318,18 @@ def run_agent(prompt: str) -> dict:
                     needs_google_connect = True
                 elif parsed_output.get("message") == "NOTION_NOT_CONNECTED":
                     needs_notion_connect = True
+
+    # Only pull image data when this turn actually generated one - otherwise
+    # the previous turn's image kept reappearing on every later reply.
+    if image_tool_called:
+        img_data = st.session_state.get_last_generated_image()
+        generated_image_b64 = img_data.get("image_b64")
+        drive_url = img_data.get("drive_url")
+        campaign_visuals = img_data.get("campaign_visuals", [])
+    else:
+        generated_image_b64 = None
+        drive_url = None
+        campaign_visuals = []
 
     return {
         "answer": answer,
