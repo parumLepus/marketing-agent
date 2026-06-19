@@ -101,44 +101,6 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 if "session_id" not in st.session_state:
     st.session_state.session_id = secrets.token_hex(8)
 
-# File-based stash so OAuth round-trips survive landing on a different
-# Streamlit Cloud worker process than the one that initiated the OAuth
-# request. An in-memory dict (module global / builtins) does NOT work here
-# because Streamlit Cloud can serve the redirect-back request from a
-# different process, which has its own empty copy of any in-memory dict —
-# that was silently losing the stash every time. /tmp is shared on the
-# same app instance, so a small JSON file per stash_id survives this.
-import tempfile
-
-_STASH_DIR = os.path.join(tempfile.gettempdir(), "oauth_stash")
-os.makedirs(_STASH_DIR, exist_ok=True)
-
-
-def _stash_path(stash_id: str) -> str:
-    return os.path.join(_STASH_DIR, f"{stash_id}.json")
-
-
-def oauth_stash_set(stash_id: str, data: dict):
-    try:
-        with open(_stash_path(stash_id), "w") as f:
-            json.dump(data, f)
-    except Exception as e:
-        print(f"oauth_stash_set failed: {e}")
-
-
-def oauth_stash_pop(stash_id: str) -> dict:
-    path = _stash_path(stash_id)
-    try:
-        with open(path, "r") as f:
-            data = json.load(f)
-        os.remove(path)
-        return data
-    except Exception as e:
-        print(f"oauth_stash_pop failed: {e}")
-        return {}
-
-
-
 if "google_connected" not in st.session_state:
     st.session_state.google_connected = False
 if "creds" not in st.session_state:
@@ -340,19 +302,16 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                 st.session_state.user_openai_key = raw_state
 
     provider = state_data.get("provider", "google")  # default keeps old links working
-    stash_id = state_data.get("stash_id")
 
-    stashed = oauth_stash_pop(stash_id) if stash_id else {}
-
-    if stashed.get("key"):
-        st.session_state.user_openai_key = stashed["key"]
-    if stashed.get("messages") and len(st.session_state.messages) <= 1:
-        st.session_state.messages = stashed["messages"]
-    if stashed.get("pending_action"):
+    if state_data.get("key"):
+        st.session_state.user_openai_key = state_data["key"]
+    if state_data.get("messages") and len(st.session_state.messages) <= 1:
+        st.session_state.messages = state_data["messages"]
+    if state_data.get("pending_action"):
         if provider == "google":
-            st.session_state.pending_google_action = stashed["pending_action"]
+            st.session_state.pending_google_action = state_data["pending_action"]
         elif provider == "notion":
-            st.session_state.pending_notion_action = stashed["pending_action"]
+            st.session_state.pending_notion_action = state_data["pending_action"]
 
     if provider == "google" and not st.session_state.google_connected:
         try:
@@ -567,15 +526,11 @@ elif notion_needed:
 
 if active_provider == "google":
 
-    _stash_id = secrets.token_hex(12)
-    oauth_stash_set(_stash_id, {
+    state_data = json.dumps({
+        "provider": "google",
         "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_url(st.session_state.messages),
         "pending_action": st.session_state.pending_google_action,
-    })
-    state_data = json.dumps({
-        "provider": "google",
-        "stash_id": _stash_id,
     })
 
     params = {
@@ -615,15 +570,11 @@ if active_provider == "google":
 
 elif active_provider == "notion":
 
-    _stash_id = secrets.token_hex(12)
-    oauth_stash_set(_stash_id, {
+    state_data = json.dumps({
+        "provider": "notion",
         "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_url(st.session_state.messages),
         "pending_action": st.session_state.pending_notion_action,
-    })
-    state_data = json.dumps({
-        "provider": "notion",
-        "stash_id": _stash_id,
     })
 
     notion_params = {
