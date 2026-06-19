@@ -67,19 +67,23 @@ st.markdown("""
 [data-testid="stFileUploader"] button { border-radius: 12px; }
 [data-testid="stFileUploaderFile"] { display: none; }
 
-.connect-btn {
+a.connect-btn,
+a.connect-btn:link,
+a.connect-btn:visited,
+a.connect-btn:active {
     display: block;
     text-align: center;
-    background: var(--primary-color, #6c7ee1);
-    color: #fff;
+    background: #6c7ee1 !important;
+    color: #fff !important;
     padding: 0.6rem 1rem;
     border-radius: 10px;
     font-weight: 600;
-    text-decoration: none;
+    text-decoration: none !important;
     margin: 0.3rem 0 0.6rem 0;
 }
-.connect-btn:hover {
-    filter: brightness(1.08);
+a.connect-btn:hover {
+    background: #5b6cd6 !important;
+    color: #fff !important;
 }
 </style>
 """, unsafe_allow_html=True)
