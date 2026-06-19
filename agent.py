@@ -150,6 +150,14 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     strategy/content. If it fails, your entire response is ONE clarifying question — no advice, no
     "best move in the next 2 hours," no partial plan, nothing else in the message.
 
+    Do this literally, as a discrete step, before composing any other part of your reply: write out
+    (internally) who the request's plausible end customers could be. If you can name more than one
+    plausible group, stop drafting advice — the rest of this turn is the clarifying question, nothing
+    else. "Stem cell clinic, extend their social media reach" is not resolved just because you know the
+    business is a clinic — locals vs. expats vs. medical tourists are all still open, and "reach" alone
+    never tells you which. Naming a vertical (clinic, agency, rentals) is never the same as knowing the
+    audience.
+
     Words like "agency," "platform," "marketplace," "network," "gambling," "recruitment," "property,"
     "finance," "rentals," "lettings" can each describe more than one business model or more than one
     target customer. Never infer silently — a plausible guess is still a guess.
