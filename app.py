@@ -188,19 +188,25 @@ def seed_agent_memory(agent, messages):
 
 
 def is_google_doc_request(text: str) -> bool:
+    lowered = text.lower()
+    if "docs.google.com" in lowered or "i created the google doc" in lowered:
+        return False  # already-completed confirmation, not a suggestion
     keywords = [
         "google doc", "create doc", "make a doc", "write a doc",
         "google document", "save to doc", "create a document"
     ]
-    return any(k in text.lower() for k in keywords)
+    return any(k in lowered for k in keywords)
 
 
 def is_notion_request(text: str) -> bool:
+    lowered = text.lower()
+    if "notion.so" in lowered or "i built the" in lowered or "i created the" in lowered:
+        return False  # already-completed confirmation, not a suggestion
     keywords = [
         "notion", "content calendar", "calendar in notion",
         "save to notion", "create a calendar"
     ]
-    return any(k in text.lower() for k in keywords)
+    return any(k in lowered for k in keywords)
 
 
 def build_current_agent():
@@ -317,6 +323,21 @@ def display_agent_result(result: dict):
             "drive_url": drive_url,
             "campaign_visuals": campaign_visuals,
         }
+
+
+def remove_last_connect_prompt(button_text: str):
+    """Drop the most recent 'connect first' message once that connection's
+    job is actually done, so the resolved chat history doesn't keep showing
+    a now-irrelevant ask."""
+    for i in range(len(st.session_state.messages) - 1, -1, -1):
+        msg = st.session_state.messages[i]
+        if msg["role"] == "assistant" and button_text in msg["content"]:
+            del st.session_state.messages[i]
+            st.session_state.generated_images = {
+                (k - 1 if k > i else k): v
+                for k, v in st.session_state.generated_images.items()
+            }
+            break
 
 # -------------------------
 # OAUTH CALLBACK — must be before st.stop()
@@ -469,6 +490,8 @@ if (
                 )
                 result = run_agent(auto_prompt)
                 display_agent_result(result)
+                if result.get("drive_url"):
+                    remove_last_connect_prompt("Connect Google Drive")
             except Exception as e:
                 import traceback
                 st.error(f"Agent crashed: {e}")
@@ -499,6 +522,8 @@ if (
                 )
                 result = run_agent(auto_prompt)
                 display_agent_result(result)
+                if not result.get("needs_notion_connect"):
+                    remove_last_connect_prompt("Connect Notion")
             except Exception as e:
                 import traceback
                 st.error(f"Agent crashed: {e}")
