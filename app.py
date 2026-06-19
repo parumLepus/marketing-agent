@@ -101,6 +101,19 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 if "session_id" not in st.session_state:
     st.session_state.session_id = secrets.token_hex(8)
 
+# Simple server-side stash so OAuth round-trips don't need to cram the
+# OpenAI key + chat history + pending action into the URL (Google/Notion
+# silently truncate long `state` params, which was corrupting the JSON
+# and losing the key on return). Keyed by session_id instead.
+if "_oauth_stash" not in st.session_state:
+    if "_global_oauth_stash" not in globals():
+        pass
+import builtins
+if not hasattr(builtins, "_OAUTH_STASH"):
+    builtins._OAUTH_STASH = {}
+OAUTH_STASH = builtins._OAUTH_STASH
+
+
 if "google_connected" not in st.session_state:
     st.session_state.google_connected = False
 if "creds" not in st.session_state:
@@ -302,16 +315,19 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
                 st.session_state.user_openai_key = raw_state
 
     provider = state_data.get("provider", "google")  # default keeps old links working
+    stash_id = state_data.get("stash_id")
 
-    if state_data.get("key"):
-        st.session_state.user_openai_key = state_data["key"]
-    if state_data.get("messages") and len(st.session_state.messages) <= 1:
-        st.session_state.messages = state_data["messages"]
-    if state_data.get("pending_action"):
+    stashed = OAUTH_STASH.pop(stash_id, {}) if stash_id else {}
+
+    if stashed.get("key"):
+        st.session_state.user_openai_key = stashed["key"]
+    if stashed.get("messages") and len(st.session_state.messages) <= 1:
+        st.session_state.messages = stashed["messages"]
+    if stashed.get("pending_action"):
         if provider == "google":
-            st.session_state.pending_google_action = state_data["pending_action"]
+            st.session_state.pending_google_action = stashed["pending_action"]
         elif provider == "notion":
-            st.session_state.pending_notion_action = state_data["pending_action"]
+            st.session_state.pending_notion_action = stashed["pending_action"]
 
     if provider == "google" and not st.session_state.google_connected:
         try:
@@ -364,12 +380,9 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
         except Exception as e:
             st.error(f"Notion OAuth failed: {e}")
 
-    # Always rerun after OAuth — on second pass query_params still has the
-    # code so key/messages/pending_action are restored again, but
-    # google_connected/notion_connected are already True so token exchange
-    # is skipped. Clear params only once connected AND key is present.
-    if (st.session_state.google_connected or st.session_state.notion_connected) and st.session_state.user_openai_key:
-        st.query_params.clear()
+    # Rerun once so the restored key/messages/pending_action (and the
+    # OAuth connection flags) are reflected before the API key check below.
+    st.query_params.clear()
     st.rerun()
 
 # -------------------------
@@ -529,11 +542,15 @@ elif notion_needed:
 
 if active_provider == "google":
 
-    state_data = json.dumps({
-        "provider": "google",
+    _stash_id = secrets.token_hex(12)
+    OAUTH_STASH[_stash_id] = {
         "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_url(st.session_state.messages),
         "pending_action": st.session_state.pending_google_action,
+    }
+    state_data = json.dumps({
+        "provider": "google",
+        "stash_id": _stash_id,
     })
 
     params = {
@@ -565,11 +582,15 @@ if active_provider == "google":
 
 elif active_provider == "notion":
 
-    state_data = json.dumps({
-        "provider": "notion",
+    _stash_id = secrets.token_hex(12)
+    OAUTH_STASH[_stash_id] = {
         "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_url(st.session_state.messages),
         "pending_action": st.session_state.pending_notion_action,
+    }
+    state_data = json.dumps({
+        "provider": "notion",
+        "stash_id": _stash_id,
     })
 
     notion_params = {
