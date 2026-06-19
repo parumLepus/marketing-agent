@@ -26,6 +26,7 @@ REFRESH_FLAG_PARAM = "_refreshed"
 
 
 def _handle_manual_refresh():
+    """Wipe session state on a manual browser refresh, but never on an OAuth redirect landing back here."""
     qp = st.query_params
 
     if qp.get(REFRESH_FLAG_PARAM) == "1":
@@ -60,6 +61,9 @@ _handle_manual_refresh()
 st.title("📊 Marketing AI Agent")
 st.caption("Ask me anything. My creator Anastasiia equipped me with data analysis, image generation, and document wizardry. I'm not saying I can do everything... but I've never seen proof that I can't.")
 
+# -------------------------
+# GLOBAL CSS
+# -------------------------
 st.markdown("""
 <style>
 [data-testid="stFileUploaderDropzoneInstructions"] { display: none; }
@@ -134,15 +138,18 @@ os.makedirs(_STASH_DIR, exist_ok=True)
 
 
 def _stash_path(stash_id: str) -> str:
+    """Build the file path for a given OAuth stash entry."""
     return os.path.join(_STASH_DIR, f"{stash_id}.json")
 
 
 def oauth_stash_set(stash_id: str, data: dict):
+    """Write key/messages/pending_action to a stash file, keyed by stash_id."""
     with open(_stash_path(stash_id), "w") as f:
         json.dump(data, f)
 
 
 def oauth_stash_pop(stash_id: str) -> dict:
+    """Read and delete a stash file, returning its contents (or {} if missing)."""
     path = _stash_path(stash_id)
     try:
         with open(path, "r") as f:
@@ -209,6 +216,7 @@ def seed_agent_memory(agent, messages):
 
 
 def is_google_doc_request(text: str) -> bool:
+    """Check whether text is suggesting/asking for a Google Doc (not a completed-doc confirmation)."""
     lowered = text.lower()
     if "docs.google.com" in lowered or "i created the google doc" in lowered:
         return False  # already-completed confirmation, not a suggestion
@@ -220,6 +228,7 @@ def is_google_doc_request(text: str) -> bool:
 
 
 def is_notion_request(text: str) -> bool:
+    """Check whether text is suggesting/asking for a Notion calendar (not a completed-calendar confirmation)."""
     lowered = text.lower()
     if "notion.so" in lowered or "i built the" in lowered or "i created the" in lowered:
         return False  # already-completed confirmation, not a suggestion
@@ -231,6 +240,7 @@ def is_notion_request(text: str) -> bool:
 
 
 def build_current_agent():
+    """Build a fresh agent wired to this session's current credentials."""
     return build_agent(
         creds=st.session_state.creds,
         openai_api_key=st.session_state.user_openai_key,
@@ -240,6 +250,7 @@ def build_current_agent():
 
 
 def _current_creds_fingerprint():
+    """Snapshot of every credential the agent's tools are built from, to detect when it needs rebuilding."""
     google_token = getattr(st.session_state.creds, "token", None) if st.session_state.creds else None
     return (
         st.session_state.user_openai_key,
@@ -250,6 +261,7 @@ def _current_creds_fingerprint():
 
 
 def ensure_agent_is_current():
+    """Rebuild the agent only if credentials changed since it was last built, reseeding memory after."""
     fingerprint = _current_creds_fingerprint()
     if (
         "agent" not in st.session_state
@@ -317,6 +329,7 @@ def run_agent(prompt: str) -> dict:
         "needs_google_connect": needs_google_connect,
         "needs_notion_connect": needs_notion_connect,
     }
+
 
 def display_agent_result(result: dict):
     """Render agent output (text + images) and save to session state."""
@@ -464,6 +477,7 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
 # OPENAI API KEY CHECK + VALIDATION
 # -------------------------
 def validate_openai_key(key: str) -> bool:
+    """Check the key actually works by calling OpenAI's models endpoint."""
     try:
         resp = http_requests.get(
             "https://api.openai.com/v1/models",
@@ -593,11 +607,11 @@ for i, msg in enumerate(st.session_state.messages):
                 if v.get("drive_url"):
                     st.markdown(f"📁 [View in Google Drive]({v['drive_url']})")
 
-
 # -------------------------
 # CONNECT BUTTONS (Google + Notion)
 # -------------------------
 def trim_messages_for_stash(messages):
+    """Keep only the last 20 messages so the OAuth stash file doesn't grow unbounded."""
     return [{"role": m["role"], "content": m["content"]} for m in messages[-20:]]
 
 google_needed = (
@@ -679,6 +693,7 @@ elif active_provider == "notion":
         with st.popover("Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
             render_connect_action(auth_url=notion_auth_url, button_label="Continue with Notion")
+
 # -------------------------
 # IMAGE UPLOAD
 # -------------------------
@@ -783,8 +798,8 @@ if user_input:
                     if result.get("needs_notion_connect") and not st.session_state.notion_connected:
                         st.session_state.pending_notion_action = user_input
                         rerun_needed = True
-                        if rerun_needed:
-                            st.rerun()
+                    if rerun_needed:
+                        st.rerun()
                 except Exception as e:
                     import traceback
                     st.error(f"Agent crashed: {e}")
