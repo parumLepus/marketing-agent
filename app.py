@@ -730,7 +730,7 @@ if user_input:
         st.session_state.pending_google_action = last_assistant
         msg = (
             "To create Google Docs I need access to your Google account. "
-            "Please click the **🔗 Connect Google Drive** button below — "
+            "Please click the **Connect Google Drive** button below — "
             "it'll open in a new tab, and once you grant access I'll create the doc automatically."
         )
         with st.chat_message("assistant"):
@@ -748,7 +748,7 @@ if user_input:
         st.session_state.pending_notion_action = last_assistant
         msg = (
             "To build your content calendar I need access to your Notion workspace. "
-            "Please click the **🔗 Connect Notion** button below — "
+            "Please click the **Connect Notion** button below — "
             "it'll open in a new tab, and once you grant access I'll build the calendar automatically."
         )
         with st.chat_message("assistant"):
