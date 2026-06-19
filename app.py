@@ -503,7 +503,17 @@ for i, msg in enumerate(st.session_state.messages):
 # CONNECT BUTTONS (Google + Notion)
 # -------------------------
 def trim_messages_for_url(messages):
-    return [{"role": m["role"], "content": m["content"]} for m in messages[-6:]]
+    # Kept tiny on purpose: this gets URL-encoded into the OAuth "state"
+    # param and a too-large redirect URL trips a 502 from Streamlit Cloud's
+    # proxy rather than a clean error.
+    return [
+        {"role": m["role"], "content": m["content"][:400]}
+        for m in messages[-3:]
+    ]
+
+
+def trim_action_for_url(action):
+    return action[:400] if action else action
 
 google_needed = (
     st.session_state.pending_google_action and
@@ -530,7 +540,7 @@ if active_provider == "google":
         "provider": "google",
         "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_url(st.session_state.messages),
-        "pending_action": st.session_state.pending_google_action,
+        "pending_action": trim_action_for_url(st.session_state.pending_google_action),
     })
 
     params = {
@@ -574,7 +584,7 @@ elif active_provider == "notion":
         "provider": "notion",
         "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_url(st.session_state.messages),
-        "pending_action": st.session_state.pending_notion_action,
+        "pending_action": trim_action_for_url(st.session_state.pending_notion_action),
     })
 
     notion_params = {
