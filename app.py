@@ -10,7 +10,7 @@ import json
 import urllib.parse
 import requests as http_requests
 from google.oauth2.credentials import Credentials
-from agent import build_agent, check_audience_ambiguity
+from agent import build_agent
 from tools.image_generation_tool import get_last_generated_image
 from tools.notion_tool import exchange_notion_code_for_token, find_accessible_page_id
 from langchain_core.messages import HumanMessage
@@ -177,8 +177,6 @@ if "pending_notion_action" not in st.session_state:
     st.session_state.pending_notion_action = None
 if "auto_running" not in st.session_state:
     st.session_state.auto_running = False
-if "awaiting_audience_answer" not in st.session_state:
-    st.session_state.awaiting_audience_answer = False
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 if "messages" not in st.session_state:
@@ -771,37 +769,20 @@ if user_input:
         with st.chat_message("assistant"):
             with st.spinner("Thinking and pulling data..."):
                 try:
-                    # Skip the check on a direct reply to a question this
-                    # same check just asked - re-running it on the answer
-                    # itself was causing it to re-litigate ("tenants" got
-                    # met with another audience question) instead of
-                    # accepting the answer.
-                    if st.session_state.awaiting_audience_answer:
-                        st.session_state.awaiting_audience_answer = False
-                        clarifying_question = None
-                    else:
-                        clarifying_question = check_audience_ambiguity(
-                            st.session_state.messages, st.session_state.user_openai_key
-                        )
-                    if clarifying_question:
-                        st.session_state.awaiting_audience_answer = True
-                        st.markdown(clarifying_question)
-                        st.session_state.messages.append({"role": "assistant", "content": clarifying_question})
-                    else:
-                        result = run_agent(user_input)
-                        display_agent_result(result)
+                    result = run_agent(user_input)
+                    display_agent_result(result)
 
-                        rerun_needed = False
-                        if st.session_state.get("uploaded_image"):
-                            st.session_state.uploaded_image = None
-                            st.session_state.uploader_key += 1
-                            rerun_needed = True
-                        if result.get("needs_google_connect") and not st.session_state.google_connected:
-                            st.session_state.pending_google_action = user_input
-                            rerun_needed = True
-                        if result.get("needs_notion_connect") and not st.session_state.notion_connected:
-                            st.session_state.pending_notion_action = user_input
-                            rerun_needed = True
+                    rerun_needed = False
+                    if st.session_state.get("uploaded_image"):
+                        st.session_state.uploaded_image = None
+                        st.session_state.uploader_key += 1
+                        rerun_needed = True
+                    if result.get("needs_google_connect") and not st.session_state.google_connected:
+                        st.session_state.pending_google_action = user_input
+                        rerun_needed = True
+                    if result.get("needs_notion_connect") and not st.session_state.notion_connected:
+                        st.session_state.pending_notion_action = user_input
+                        rerun_needed = True
                         if rerun_needed:
                             st.rerun()
                 except Exception as e:

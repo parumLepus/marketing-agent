@@ -11,7 +11,6 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_classic.agents import create_tool_calling_agent
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
-from typing import Optional
 import copy
 
 from tools.search_tool import search_marketing_trends
@@ -60,73 +59,6 @@ class TrimmedChatMessageHistory(ChatMessageHistory):
         if len(msgs) > 30:
             msgs = msgs[-30:]
         return trim_image_from_messages(msgs)
-
-
-_AUDIENCE_CHECK_PROMPT = """You check exactly ONE thing: whether the end customer / target audience for
-a marketing request is genuinely ambiguous - i.e. could reasonably be read as referring to more than
-one distinct group of people.
-
-Common dual-audience cases: property/rentals/lettings (landlords vs. renters), recruitment (employers
-vs. candidates), marketplaces (buyers vs. sellers), lending (borrowers vs. investors), gambling (players
-vs. operators/affiliates), healthcare/clinics (patients - and within that, locals vs. expats vs. medical
-tourists - vs. referring providers), education (students vs. schools/employers), and any other business
-where "customers," "leads," or "reach" could mean more than one group.
-
-Naming a vertical or business type (clinic, agency, rental company) is NEVER enough on its own to
-resolve this - the actual end-customer group must be explicitly named somewhere in the conversation.
-
-Look at the full conversation, not just the latest message. If the audience for the user's current
-request has already been explicitly clarified anywhere earlier in this conversation, it is NOT
-ambiguous anymore.
-
-If the request has no plausible dual-audience read at all (e.g. it's about an image, a single obvious
-audience, or it's not a new marketing request needing an audience), it is NOT ambiguous.
-
-Be generous about resolving it: if the user has named ANY specific segment from the relevant list
-(even with a typo or shorthand, e.g. "expacts" clearly means "expats"), that resolves it - don't ask
-again and don't ask any other question. Your only job is this one audience check, never ask about
-anything else (business type, goals, etc.) even if those also seem unclear.
-
-Respond with ONLY this JSON object, nothing else, no markdown fences, no extra commentary:
-{"ambiguous": true or false, "question": "the single clarifying question to ask, or empty string"}
-"""
-
-
-def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> Optional[str]:
-    """Dedicated, narrowly-scoped LLM call for the Step 2 audience gate,
-    run before the main agent sees the message. Kept as its own call
-    rather than folded into the big system prompt: that prompt covers a
-    lot of ground, and this specific check kept getting skipped by the
-    main agent even when explicitly named in it as a confirmed failure
-    pattern. Isolating it gives it the model's full attention instead of
-    competing with everything else for a few lines of focus.
-
-    Returns the clarifying question to ask, or None if the audience is
-    clear (or already resolved earlier in the conversation).
-    """
-    import json as _json
-    import re as _re
-
-    api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
-    checker_llm = ChatOpenAI(model="gpt-5.4-mini", temperature=0, openai_api_key=api_key)
-
-    convo_text = "\n".join(f"{m['role']}: {m['content']}" for m in messages[-12:])
-
-    try:
-        response = checker_llm.invoke([
-            ("system", _AUDIENCE_CHECK_PROMPT),
-            ("human", convo_text),
-        ])
-        raw = response.content
-        match = _re.search(r"\{.*\}", raw, _re.DOTALL)
-        result = _json.loads(match.group(0) if match else raw)
-    except Exception as e:
-        print(f"check_audience_ambiguity failed, letting request through unchecked: {e}")
-        return None
-
-    if result.get("ambiguous") and result.get("question"):
-        return result["question"]
-    return None
 
 
 def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_id=None):
@@ -218,13 +150,21 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     strategy/content. If it fails, your entire response is ONE clarifying question — no advice, no
     "best move in the next 2 hours," no partial plan, nothing else in the message.
 
-    Do this literally, as a discrete step, before composing any other part of your reply: write out
-    (internally) who the request's plausible end customers could be. If you can name more than one
-    plausible group, stop drafting advice — the rest of this turn is the clarifying question, nothing
-    else. "Stem cell clinic, extend their social media reach" is not resolved just because you know the
-    business is a clinic — locals vs. expats vs. medical tourists are all still open, and "reach" alone
-    never tells you which. Naming a vertical (clinic, agency, rentals) is never the same as knowing the
-    audience.
+    FIRST, before anything else: check the conversation history for a clarifying question YOU already
+    asked about this exact audience. If one exists and the user's next message names ANY single
+    option from it — even just one word, even with a typo ("tenants," "landlords," "expats," whatever
+    the options were) — that single word IS the answer. Proceed immediately with that audience. Do
+    not ask a second question about the same thing in different words, do not ask for more detail, do
+    not second-guess a one-word answer to a question you yourself asked. Re-asking after a direct
+    one-word answer is the single most common failure of this entire step — check for this first,
+    every time, before evaluating anything else below.
+
+    Only once that's checked and clear: write out (internally) who the request's plausible end
+    customers could be. If you can name more than one plausible group, stop drafting advice — the rest
+    of this turn is the clarifying question, nothing else. "Stem cell clinic, extend their social media
+    reach" is not resolved just because you know the business is a clinic — locals vs. expats vs.
+    medical tourists are all still open, and "reach" alone never tells you which. Naming a vertical
+    (clinic, agency, rentals) is never the same as knowing the audience.
 
     Words like "agency," "platform," "marketplace," "network," "gambling," "recruitment," "property,"
     "finance," "rentals," "lettings" can each describe more than one business model or more than one
@@ -260,11 +200,6 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
 
     Example clarification: "Quick check — are you trying to acquire players/customers for a gambling
     brand, or gambling companies as clients for your agency?"
-
-    If the conversation already contains a clarifying question about this exact ambiguity and the user
-    has replied naming any specific segment from the relevant pair/list — even with a typo or shorthand
-    (e.g. "landlors" clearly means "landlords") — treat it as resolved. Do not ask a second,
-    differently-worded version of the same question; proceed using what they named.
 
     This gate OVERRIDES Step 8's "act now, don't stall" instruction. Step 8 applies only once Step 2
     has passed. Acting on an ambiguous audience is never "having enough context."
