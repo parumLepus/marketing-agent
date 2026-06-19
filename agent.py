@@ -11,6 +11,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_classic.agents import create_tool_calling_agent
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
+from typing import Optional
 import copy
 
 from tools.search_tool import search_marketing_trends
@@ -86,7 +87,7 @@ Respond with ONLY this JSON object, nothing else, no markdown fences:
 """
 
 
-def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> str | None:
+def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> Optional[str]:
     """Dedicated, narrowly-scoped LLM call for the Step 2 audience gate,
     run before the main agent sees the message. Kept as its own call
     rather than folded into the big system prompt: that prompt covers a
