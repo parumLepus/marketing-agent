@@ -66,6 +66,48 @@ st.markdown("""
 [data-testid="stFileUploaderDropzone"] { min-height: 50px; padding: 0; border: none; background: transparent; }
 [data-testid="stFileUploader"] button { border-radius: 12px; }
 [data-testid="stFileUploaderFile"] { display: none; }
+
+.action-card {
+    background: rgba(120, 130, 160, 0.08);
+    border: 1px solid rgba(120, 130, 160, 0.25);
+    border-radius: 14px;
+    padding: 14px 16px 4px 16px;
+    position: relative;
+    margin: 0.3rem 0 0.6rem 0;
+}
+.action-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--primary-color, #6c7ee1);
+    border-radius: 14px 0 0 14px;
+}
+.action-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+}
+.action-card-head .icon {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: rgba(120, 130, 160, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 13px;
+}
+.action-card-head span {
+    font-size: 14px;
+    font-weight: 600;
+}
+.action-card .sub {
+    font-size: 12.5px;
+    opacity: 0.7;
+    margin: 0 0 2px 36px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -339,6 +381,23 @@ def remove_last_connect_prompt(button_text: str):
             }
             break
 
+
+def render_connect_action(icon: str, title: str, sub: str, auth_url: str, button_label: str, button_key: str):
+    """Themed card + a real st.button (so it picks up the app's own theme
+    instead of a hardcoded brand color) that opens auth_url in a new tab."""
+    st.markdown(f"""
+    <div class="action-card">
+        <div class="action-card-head">
+            <div class="icon">{icon}</div>
+            <span>{title}</span>
+        </div>
+        <p class="sub">{sub}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button(button_label, key=button_key, type="primary", use_container_width=True):
+        components.html(f"<script>window.open({auth_url!r}, '_blank');</script>", height=0, width=0)
+
 # -------------------------
 # OAUTH CALLBACK — must be before st.stop()
 # -------------------------
@@ -490,7 +549,7 @@ if (
                 )
                 result = run_agent(auto_prompt)
                 display_agent_result(result)
-                if result.get("drive_url"):
+                if not result.get("needs_google_connect"):
                     remove_last_connect_prompt("Connect Google Drive")
             except Exception as e:
                 import traceback
@@ -609,27 +668,24 @@ if active_provider == "google":
 
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
     if st.session_state.pending_google_action:
-        st.markdown(f"""
-        <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;margin-bottom:0.5rem;">
-        <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
-        📄 Ready to create your Google Doc — just connect first:
-        </p>
-        <a href="{auth_url}" target="_blank"
-           style="display:block;text-align:center;background:#4285F4;color:white;
-           padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
-           👉 Connect Google & Create Doc
-        </a>
-        </div>
-        """, unsafe_allow_html=True)
+        render_connect_action(
+            icon="📄",
+            title="Ready to create your Google Doc",
+            sub="Connect your account, then I'll build it automatically.",
+            auth_url=auth_url,
+            button_label="Connect Google & Create Doc",
+            button_key="connect_google_pending",
+        )
     else:
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
-            st.markdown(
-                f'<a href="{auth_url}" target="_blank" '
-                f'style="display:block;text-align:center;background:#4285F4;color:white;'
-                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
-                f'👉 Continue with Google</a>',
-                unsafe_allow_html=True
+            render_connect_action(
+                icon="📄",
+                title="Connect Google Drive",
+                sub="Needed to create and save Google Docs for you.",
+                auth_url=auth_url,
+                button_label="Continue with Google",
+                button_key="connect_google_popover",
             )
 
 elif active_provider == "notion":
@@ -656,27 +712,24 @@ elif active_provider == "notion":
     notion_auth_url = "https://api.notion.com/v1/oauth/authorize?" + urllib.parse.urlencode(notion_params)
 
     if st.session_state.pending_notion_action:
-        st.markdown(f"""
-        <div style="background:#2d2440;border:1px solid #9b87f5;border-radius:10px;padding:1rem;margin-bottom:0.5rem;">
-        <p style="margin:0 0 0.5rem 0;color:#e3d9ff;font-weight:600;">
-        🗒️ Ready to build your content calendar — just connect first:
-        </p>
-        <a href="{notion_auth_url}" target="_blank"
-           style="display:block;text-align:center;background:#000;color:white;
-           padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
-           👉 Connect Notion & Build Calendar
-        </a>
-        </div>
-        """, unsafe_allow_html=True)
+        render_connect_action(
+            icon="🗒️",
+            title="Ready to build your content calendar",
+            sub="Connect your workspace, then I'll build it automatically.",
+            auth_url=notion_auth_url,
+            button_label="Connect Notion & Build Calendar",
+            button_key="connect_notion_pending",
+        )
     else:
         with st.popover("🔗 Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
-            st.markdown(
-                f'<a href="{notion_auth_url}" target="_blank" '
-                f'style="display:block;text-align:center;background:#000;color:white;'
-                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
-                f'👉 Continue with Notion</a>',
-                unsafe_allow_html=True
+            render_connect_action(
+                icon="🗒️",
+                title="Connect Notion",
+                sub="Needed to build and update content calendars for you.",
+                auth_url=notion_auth_url,
+                button_label="Continue with Notion",
+                button_key="connect_notion_popover",
             )
 # -------------------------
 # IMAGE UPLOAD
