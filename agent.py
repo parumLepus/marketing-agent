@@ -82,7 +82,12 @@ ambiguous anymore.
 If the request has no plausible dual-audience read at all (e.g. it's about an image, a single obvious
 audience, or it's not a new marketing request needing an audience), it is NOT ambiguous.
 
-Respond with ONLY this JSON object, nothing else, no markdown fences:
+Be generous about resolving it: if the user has named ANY specific segment from the relevant list
+(even with a typo or shorthand, e.g. "expacts" clearly means "expats"), that resolves it - don't ask
+again and don't ask any other question. Your only job is this one audience check, never ask about
+anything else (business type, goals, etc.) even if those also seem unclear.
+
+Respond with ONLY this JSON object, nothing else, no markdown fences, no extra commentary:
 {"ambiguous": true or false, "question": "the single clarifying question to ask, or empty string"}
 """
 
@@ -102,7 +107,12 @@ def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> Opti
     import json as _json
 
     api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
-    checker_llm = ChatOpenAI(model="gpt-5.4-mini", temperature=0, openai_api_key=api_key)
+    checker_llm = ChatOpenAI(
+        model="gpt-5.4-mini",
+        temperature=0,
+        openai_api_key=api_key,
+        model_kwargs={"response_format": {"type": "json_object"}},
+    )
 
     convo_text = "\n".join(f"{m['role']}: {m['content']}" for m in messages[-12:])
 
