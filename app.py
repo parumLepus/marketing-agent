@@ -106,7 +106,21 @@ st.markdown("""
 .action-card .sub {
     font-size: 12.5px;
     opacity: 0.7;
-    margin: 0 0 2px 36px;
+    margin: 0 0 10px 36px;
+}
+.action-card .connect-btn {
+    display: block;
+    text-align: center;
+    background: var(--primary-color, #6c7ee1);
+    color: #fff;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 0.4rem;
+}
+.action-card .connect-btn:hover {
+    filter: brightness(1.08);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -383,8 +397,12 @@ def remove_last_connect_prompt(button_text: str):
 
 
 def render_connect_action(icon: str, title: str, sub: str, auth_url: str, button_label: str, button_key: str):
-    """Themed card + a real st.button (so it picks up the app's own theme
-    instead of a hardcoded brand color) that opens auth_url in a new tab."""
+    """Themed card with a real <a> link styled as a button. Has to be a
+    genuine anchor (not st.button + JS window.open) - a click on st.button
+    triggers a server round-trip before any JS runs, by which point the
+    browser no longer treats window.open as user-initiated and silently
+    blocks it as a popup. A direct <a target="_blank"> click is itself the
+    native browser trigger, so it's never blocked."""
     st.markdown(f"""
     <div class="action-card">
         <div class="action-card-head">
@@ -392,11 +410,9 @@ def render_connect_action(icon: str, title: str, sub: str, auth_url: str, button
             <span>{title}</span>
         </div>
         <p class="sub">{sub}</p>
+        <a href="{auth_url}" target="_blank" class="connect-btn">{button_label}</a>
     </div>
     """, unsafe_allow_html=True)
-
-    if st.button(button_label, key=button_key, type="primary", use_container_width=True):
-        components.html(f"<script>window.open({auth_url!r}, '_blank');</script>", height=0, width=0)
 
 # -------------------------
 # OAUTH CALLBACK — must be before st.stop()
