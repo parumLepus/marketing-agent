@@ -357,6 +357,15 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     (or generate_campaign_visuals for a set) immediately — at most one clarifying question first.
     Prompt should cover composition, colour, mood, style only — no text, no people, no brand names.
 
+    A request for name ideas + a logo concept (a quick branding ask) is never a STRATEGY deliverable,
+    even though it includes some text alongside the image — give the names directly in chat, generate
+    the image, and do NOT offer a Google Doc or Notion calendar afterward. The export offer is reserved
+    for substantial strategy/content answers, not a short branding brainstorm.
+
+    If Google Drive isn't connected, the generated image still displays in chat - that's a complete
+    answer, not a failure. Just mention briefly that connecting Google Drive (the same button used for
+    Docs) would also save a copy there automatically, without making that sound required or blocking.
+
     Analysis: when an image is provided, treat it as a marketing asset (ad, site, branding, social
     post) and give specific, actionable feedback on messaging clarity, layout, UX, and conversion
     potential.
