@@ -67,48 +67,7 @@ st.markdown("""
 [data-testid="stFileUploader"] button { border-radius: 12px; }
 [data-testid="stFileUploaderFile"] { display: none; }
 
-.action-card {
-    background: rgba(120, 130, 160, 0.08);
-    border: 1px solid rgba(120, 130, 160, 0.25);
-    border-radius: 14px;
-    padding: 14px 16px 4px 16px;
-    position: relative;
-    margin: 0.3rem 0 0.6rem 0;
-}
-.action-card::before {
-    content: "";
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--primary-color, #6c7ee1);
-    border-radius: 14px 0 0 14px;
-}
-.action-card-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 2px;
-}
-.action-card-head .icon {
-    width: 26px; height: 26px;
-    border-radius: 8px;
-    background: rgba(120, 130, 160, 0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 13px;
-}
-.action-card-head span {
-    font-size: 14px;
-    font-weight: 600;
-}
-.action-card .sub {
-    font-size: 12.5px;
-    opacity: 0.7;
-    margin: 0 0 10px 36px;
-}
-.action-card .connect-btn {
+.connect-btn {
     display: block;
     text-align: center;
     background: var(--primary-color, #6c7ee1);
@@ -117,9 +76,9 @@ st.markdown("""
     border-radius: 10px;
     font-weight: 600;
     text-decoration: none;
-    margin-bottom: 0.4rem;
+    margin: 0.3rem 0 0.6rem 0;
 }
-.action-card .connect-btn:hover {
+.connect-btn:hover {
     filter: brightness(1.08);
 }
 </style>
@@ -396,23 +355,18 @@ def remove_last_connect_prompt(button_text: str):
             break
 
 
-def render_connect_action(icon: str, title: str, sub: str, auth_url: str, button_label: str, button_key: str):
-    """Themed card with a real <a> link styled as a button. Has to be a
-    genuine anchor (not st.button + JS window.open) - a click on st.button
-    triggers a server round-trip before any JS runs, by which point the
-    browser no longer treats window.open as user-initiated and silently
-    blocks it as a popup. A direct <a target="_blank"> click is itself the
-    native browser trigger, so it's never blocked."""
-    st.markdown(f"""
-    <div class="action-card">
-        <div class="action-card-head">
-            <div class="icon">{icon}</div>
-            <span>{title}</span>
-        </div>
-        <p class="sub">{sub}</p>
-        <a href="{auth_url}" target="_blank" class="connect-btn">{button_label}</a>
-    </div>
-    """, unsafe_allow_html=True)
+def render_connect_action(auth_url: str, button_label: str):
+    """Just the button - the chat message above it already explains what's
+    happening. Has to be a genuine <a> (not st.button + JS window.open):
+    a click on st.button triggers a server round-trip before any JS runs,
+    by which point the browser no longer treats window.open as
+    user-initiated and silently blocks it as a popup. A direct
+    <a target="_blank"> click is itself the native browser trigger, so it
+    can't be blocked."""
+    st.markdown(
+        f'<a href="{auth_url}" target="_blank" class="connect-btn">{button_label}</a>',
+        unsafe_allow_html=True,
+    )
 
 # -------------------------
 # OAUTH CALLBACK — must be before st.stop()
@@ -684,25 +638,11 @@ if active_provider == "google":
 
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
     if st.session_state.pending_google_action:
-        render_connect_action(
-            icon="📄",
-            title="Ready to create your Google Doc",
-            sub="Connect your account, then I'll build it automatically.",
-            auth_url=auth_url,
-            button_label="Connect Google & Create Doc",
-            button_key="connect_google_pending",
-        )
+        render_connect_action(auth_url=auth_url, button_label="Connect Google & Create Doc")
     else:
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
-            render_connect_action(
-                icon="📄",
-                title="Connect Google Drive",
-                sub="Needed to create and save Google Docs for you.",
-                auth_url=auth_url,
-                button_label="Continue with Google",
-                button_key="connect_google_popover",
-            )
+            render_connect_action(auth_url=auth_url, button_label="Continue with Google")
 
 elif active_provider == "notion":
 
@@ -728,25 +668,11 @@ elif active_provider == "notion":
     notion_auth_url = "https://api.notion.com/v1/oauth/authorize?" + urllib.parse.urlencode(notion_params)
 
     if st.session_state.pending_notion_action:
-        render_connect_action(
-            icon="🗒️",
-            title="Ready to build your content calendar",
-            sub="Connect your workspace, then I'll build it automatically.",
-            auth_url=notion_auth_url,
-            button_label="Connect Notion & Build Calendar",
-            button_key="connect_notion_pending",
-        )
+        render_connect_action(auth_url=notion_auth_url, button_label="Connect Notion & Build Calendar")
     else:
         with st.popover("🔗 Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
-            render_connect_action(
-                icon="🗒️",
-                title="Connect Notion",
-                sub="Needed to build and update content calendars for you.",
-                auth_url=notion_auth_url,
-                button_label="Continue with Notion",
-                button_key="connect_notion_popover",
-            )
+            render_connect_action(auth_url=notion_auth_url, button_label="Continue with Notion")
 # -------------------------
 # IMAGE UPLOAD
 # -------------------------
