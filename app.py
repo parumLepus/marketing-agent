@@ -589,21 +589,29 @@ if active_provider == "google":
     }
 
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
-
     if st.session_state.pending_google_action:
-        st.markdown("""
+        st.markdown(f"""
         <div style="background:#1e3a5f;border:1px solid #4285F4;border-radius:10px;padding:1rem;margin-bottom:0.5rem;">
-        <p style="margin:0;color:#cfe8ff;font-weight:600;">
+        <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
         📄 Ready to create your Google Doc — just connect first:
         </p>
+        <a href="{auth_url}" target="_self"
+           style="display:block;text-align:center;background:#4285F4;color:white;
+           padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
+           👉 Connect Google & Create Doc
+        </a>
         </div>
         """, unsafe_allow_html=True)
-        st.link_button("👉 Connect Google & Create Doc", auth_url, use_container_width=True)
     else:
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
-            st.link_button("👉 Continue with Google", auth_url, use_container_width=True)
-
+            st.markdown(
+                f'<a href="{auth_url}" target="_self" '
+                f'style="display:block;text-align:center;background:#4285F4;color:white;'
+                f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
+                f'👉 Continue with Google</a>',
+                unsafe_allow_html=True
+            )
 
 elif active_provider == "notion":
 
