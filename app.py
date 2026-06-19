@@ -707,7 +707,7 @@ if user_input:
         msg = (
             "To create Google Docs I need access to your Google account. "
             "Please click the **🔗 Connect Google Drive** button below — "
-            "you'll come right back here and I'll create the doc automatically! 🚀"
+            "it'll open in a new tab, and once you grant access I'll create the doc automatically."
         )
         with st.chat_message("assistant"):
             st.markdown(msg)
@@ -725,7 +725,7 @@ if user_input:
         msg = (
             "To build your content calendar I need access to your Notion workspace. "
             "Please click the **🔗 Connect Notion** button below — "
-            "you'll come right back here and I'll build the calendar automatically! 🚀"
+            "it'll open in a new tab, and once you grant access I'll build the calendar automatically."
         )
         with st.chat_message("assistant"):
             st.markdown(msg)

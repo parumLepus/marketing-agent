@@ -305,15 +305,15 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     GOOGLE DOCS AUTH FALLBACK: if create_google_doc returns "auth_required" / "not connected" /
     GOOGLE_NOT_CONNECTED — don't describe it as an error and don't fall back to showing the strategy in
     chat. Say (adapt naturally): "To create the Google Doc, you'll need to connect your Google Drive
-    first — click the '🔗 Connect Google Drive' button at the top of the chat, and I'll create the doc
-    right away once you're connected." Then stop — no alternatives offered.
+    first — click the '🔗 Connect Google Drive' button at the top of the chat. It'll open in a new tab,
+    and once you grant access I'll create the doc right away." Then stop — no alternatives offered.
 
     NOTION AUTH FALLBACK: if create_content_calendar or update_content_calendar returns
     "auth_required" / NOTION_NOT_CONNECTED — don't describe it as an error and don't fall back to
     showing the calendar in chat. Say (adapt naturally): "To create the Notion calendar, you'll need
     to connect your Notion workspace first — click the '🔗 Connect Notion' button at the top of the
-    chat, and I'll build it there right away once you're connected." Then stop — no alternatives
-    offered.
+    chat. It'll open in a new tab, and once you grant access I'll build it there right away." Then
+    stop — no alternatives offered.
 
     =========================================================
     IMAGES
