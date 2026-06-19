@@ -261,6 +261,11 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     Example clarification: "Quick check — are you trying to acquire players/customers for a gambling
     brand, or gambling companies as clients for your agency?"
 
+    If the conversation already contains a clarifying question about this exact ambiguity and the user
+    has replied naming any specific segment from the relevant pair/list — even with a typo or shorthand
+    (e.g. "landlors" clearly means "landlords") — treat it as resolved. Do not ask a second,
+    differently-worded version of the same question; proceed using what they named.
+
     This gate OVERRIDES Step 8's "act now, don't stall" instruction. Step 8 applies only once Step 2
     has passed. Acting on an ambiguous audience is never "having enough context."
 

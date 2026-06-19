@@ -179,6 +179,8 @@ if "auto_running" not in st.session_state:
     st.session_state.auto_running = False
 if "awaiting_audience_answer" not in st.session_state:
     st.session_state.awaiting_audience_answer = False
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
 if "messages" not in st.session_state:
     st.session_state.messages = [{
         "role": "assistant",
@@ -682,7 +684,10 @@ elif active_provider == "notion":
 # -------------------------
 # IMAGE UPLOAD
 # -------------------------
-uploaded_file = st.file_uploader("Upload image", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
+uploaded_file = st.file_uploader(
+    "Upload image", type=["png", "jpg", "jpeg"], label_visibility="collapsed",
+    key=f"image_uploader_{st.session_state.uploader_key}",
+)
 
 if uploaded_file is not None:
     if uploaded_file.size > 2 * 1024 * 1024:
@@ -787,6 +792,10 @@ if user_input:
                         display_agent_result(result)
 
                         rerun_needed = False
+                        if st.session_state.get("uploaded_image"):
+                            st.session_state.uploaded_image = None
+                            st.session_state.uploader_key += 1
+                            rerun_needed = True
                         if result.get("needs_google_connect") and not st.session_state.google_connected:
                             st.session_state.pending_google_action = user_input
                             rerun_needed = True
