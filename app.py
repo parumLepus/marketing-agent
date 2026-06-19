@@ -595,7 +595,7 @@ if active_provider == "google":
         <p style="margin:0 0 0.5rem 0;color:#cfe8ff;font-weight:600;">
         📄 Ready to create your Google Doc — just connect first:
         </p>
-        <a href="{auth_url}" target="_top"
+        <a href="{auth_url}" target="_blank"
            style="display:block;text-align:center;background:#4285F4;color:white;
            padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
            👉 Connect Google & Create Doc
@@ -606,7 +606,7 @@ if active_provider == "google":
         with st.popover("🔗 Connect Google Drive"):
             st.write("Authorize Google Drive access")
             st.markdown(
-                f'<a href="{auth_url}" target="_top" '
+                f'<a href="{auth_url}" target="_blank" '
                 f'style="display:block;text-align:center;background:#4285F4;color:white;'
                 f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
                 f'👉 Continue with Google</a>',
@@ -642,7 +642,7 @@ elif active_provider == "notion":
         <p style="margin:0 0 0.5rem 0;color:#e3d9ff;font-weight:600;">
         🗒️ Ready to build your content calendar — just connect first:
         </p>
-        <a href="{notion_auth_url}" target="_top"
+        <a href="{notion_auth_url}" target="_blank"
            style="display:block;text-align:center;background:#000;color:white;
            padding:0.6rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
            👉 Connect Notion & Build Calendar
@@ -653,7 +653,7 @@ elif active_provider == "notion":
         with st.popover("🔗 Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
             st.markdown(
-                f'<a href="{notion_auth_url}" target="_top" '
+                f'<a href="{notion_auth_url}" target="_blank" '
                 f'style="display:block;text-align:center;background:#000;color:white;'
                 f'padding:0.5rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">'
                 f'👉 Continue with Notion</a>',
