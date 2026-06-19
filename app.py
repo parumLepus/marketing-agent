@@ -297,7 +297,13 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
     if raw_state:
         try:
             state_data = json.loads(raw_state)
-        except Exception:
+        except Exception as e:
+            import re
+            redacted = re.sub(r"sk-[A-Za-z0-9_-]+", "sk-***REDACTED***", raw_state)
+            st.warning(
+                f"DEBUG: state parse failed ({e}). length={len(raw_state)}. "
+                f"head={redacted[:120]!r} tail={redacted[-120:]!r}"
+            )
             if raw_state.startswith("sk-"):
                 st.session_state.user_openai_key = raw_state
 
