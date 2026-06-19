@@ -10,7 +10,7 @@ import json
 import urllib.parse
 import requests as http_requests
 from google.oauth2.credentials import Credentials
-from agent import build_agent
+from agent import build_agent, check_audience_ambiguity
 from tools.image_generation_tool import get_last_generated_image
 from tools.notion_tool import exchange_notion_code_for_token, find_accessible_page_id
 from langchain_core.messages import HumanMessage
@@ -764,18 +764,25 @@ if user_input:
         with st.chat_message("assistant"):
             with st.spinner("Thinking and pulling data..."):
                 try:
-                    result = run_agent(user_input)
-                    display_agent_result(result)
+                    clarifying_question = check_audience_ambiguity(
+                        st.session_state.messages, st.session_state.user_openai_key
+                    )
+                    if clarifying_question:
+                        st.markdown(clarifying_question)
+                        st.session_state.messages.append({"role": "assistant", "content": clarifying_question})
+                    else:
+                        result = run_agent(user_input)
+                        display_agent_result(result)
 
-                    rerun_needed = False
-                    if result.get("needs_google_connect") and not st.session_state.google_connected:
-                        st.session_state.pending_google_action = user_input
-                        rerun_needed = True
-                    if result.get("needs_notion_connect") and not st.session_state.notion_connected:
-                        st.session_state.pending_notion_action = user_input
-                        rerun_needed = True
-                    if rerun_needed:
-                        st.rerun()
+                        rerun_needed = False
+                        if result.get("needs_google_connect") and not st.session_state.google_connected:
+                            st.session_state.pending_google_action = user_input
+                            rerun_needed = True
+                        if result.get("needs_notion_connect") and not st.session_state.notion_connected:
+                            st.session_state.pending_notion_action = user_input
+                            rerun_needed = True
+                        if rerun_needed:
+                            st.rerun()
                 except Exception as e:
                     import traceback
                     st.error(f"Agent crashed: {e}")

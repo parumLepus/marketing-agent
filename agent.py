@@ -61,6 +61,64 @@ class TrimmedChatMessageHistory(ChatMessageHistory):
         return trim_image_from_messages(msgs)
 
 
+_AUDIENCE_CHECK_PROMPT = """You check exactly ONE thing: whether the end customer / target audience for
+a marketing request is genuinely ambiguous - i.e. could reasonably be read as referring to more than
+one distinct group of people.
+
+Common dual-audience cases: property/rentals/lettings (landlords vs. renters), recruitment (employers
+vs. candidates), marketplaces (buyers vs. sellers), lending (borrowers vs. investors), gambling (players
+vs. operators/affiliates), healthcare/clinics (patients - and within that, locals vs. expats vs. medical
+tourists - vs. referring providers), education (students vs. schools/employers), and any other business
+where "customers," "leads," or "reach" could mean more than one group.
+
+Naming a vertical or business type (clinic, agency, rental company) is NEVER enough on its own to
+resolve this - the actual end-customer group must be explicitly named somewhere in the conversation.
+
+Look at the full conversation, not just the latest message. If the audience for the user's current
+request has already been explicitly clarified anywhere earlier in this conversation, it is NOT
+ambiguous anymore.
+
+If the request has no plausible dual-audience read at all (e.g. it's about an image, a single obvious
+audience, or it's not a new marketing request needing an audience), it is NOT ambiguous.
+
+Respond with ONLY this JSON object, nothing else, no markdown fences:
+{"ambiguous": true or false, "question": "the single clarifying question to ask, or empty string"}
+"""
+
+
+def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> str | None:
+    """Dedicated, narrowly-scoped LLM call for the Step 2 audience gate,
+    run before the main agent sees the message. Kept as its own call
+    rather than folded into the big system prompt: that prompt covers a
+    lot of ground, and this specific check kept getting skipped by the
+    main agent even when explicitly named in it as a confirmed failure
+    pattern. Isolating it gives it the model's full attention instead of
+    competing with everything else for a few lines of focus.
+
+    Returns the clarifying question to ask, or None if the audience is
+    clear (or already resolved earlier in the conversation).
+    """
+    import json as _json
+
+    api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+    checker_llm = ChatOpenAI(model="gpt-5.4-mini", temperature=0, openai_api_key=api_key)
+
+    convo_text = "\n".join(f"{m['role']}: {m['content']}" for m in messages[-12:])
+
+    try:
+        response = checker_llm.invoke([
+            ("system", _AUDIENCE_CHECK_PROMPT),
+            ("human", convo_text),
+        ])
+        result = _json.loads(response.content)
+    except Exception:
+        return None
+
+    if result.get("ambiguous") and result.get("question"):
+        return result["question"]
+    return None
+
+
 def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_id=None):
     """
     creds: Google OAuth credentials for THIS user (or None if not connected).
