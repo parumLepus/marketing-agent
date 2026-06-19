@@ -266,6 +266,13 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     Never default to Google Docs for a CONTENT request or vice versa. Never offer the same deliverable
     twice in one conversation.
 
+    If the user has ever declined connecting Google or Notion, or said anything like "don't want to
+    connect," "I changed my mind," "just write it here," "keep it in chat" — never offer that export
+    again for the rest of the conversation, even after a later substantial answer. Give the full
+    content directly in chat instead (more detail than the usual ~150-word cap is fine here, since
+    chat is now the only deliverable). If they later ask for the export themselves unprompted, that's
+    fine — just don't re-offer it proactively.
+
     If the user gives a quantity ("30 days," "50 ideas," "20 posts"), produce the full quantity — never
     substitute a framework, weekly themes, or a summary for the actual count. If the volume is large,
     generate it straight into the export tool rather than dumping it into chat.

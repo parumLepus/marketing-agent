@@ -73,8 +73,8 @@ a.connect-btn:visited,
 a.connect-btn:active {
     display: block;
     text-align: center;
-    background: #6c7ee1 !important;
-    color: #fff !important;
+    background: #e8a33d !important;
+    color: #1a1306 !important;
     padding: 0.6rem 1rem;
     border-radius: 10px;
     font-weight: 600;
@@ -82,8 +82,8 @@ a.connect-btn:active {
     margin: 0.3rem 0 0.6rem 0;
 }
 a.connect-btn:hover {
-    background: #5b6cd6 !important;
-    color: #fff !important;
+    background: #f0b35a !important;
+    color: #1a1306 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -644,7 +644,7 @@ if active_provider == "google":
     if st.session_state.pending_google_action:
         render_connect_action(auth_url=auth_url, button_label="Connect Google & Create Doc")
     else:
-        with st.popover("🔗 Connect Google Drive"):
+        with st.popover("Connect Google Drive"):
             st.write("Authorize Google Drive access")
             render_connect_action(auth_url=auth_url, button_label="Continue with Google")
 
@@ -674,7 +674,7 @@ elif active_provider == "notion":
     if st.session_state.pending_notion_action:
         render_connect_action(auth_url=notion_auth_url, button_label="Connect Notion & Build Calendar")
     else:
-        with st.popover("🔗 Connect Notion"):
+        with st.popover("Connect Notion"):
             st.write("Authorize Notion access — you'll pick which page to share")
             render_connect_action(auth_url=notion_auth_url, button_label="Continue with Notion")
 # -------------------------
