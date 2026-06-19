@@ -105,14 +105,10 @@ def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> Opti
     clear (or already resolved earlier in the conversation).
     """
     import json as _json
+    import re as _re
 
     api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
-    checker_llm = ChatOpenAI(
-        model="gpt-5.4-mini",
-        temperature=0,
-        openai_api_key=api_key,
-        model_kwargs={"response_format": {"type": "json_object"}},
-    )
+    checker_llm = ChatOpenAI(model="gpt-5.4-mini", temperature=0, openai_api_key=api_key)
 
     convo_text = "\n".join(f"{m['role']}: {m['content']}" for m in messages[-12:])
 
@@ -121,8 +117,11 @@ def check_audience_ambiguity(messages: list, openai_api_key: str = None) -> Opti
             ("system", _AUDIENCE_CHECK_PROMPT),
             ("human", convo_text),
         ])
-        result = _json.loads(response.content)
-    except Exception:
+        raw = response.content
+        match = _re.search(r"\{.*\}", raw, _re.DOTALL)
+        result = _json.loads(match.group(0) if match else raw)
+    except Exception as e:
+        print(f"check_audience_ambiguity failed, letting request through unchecked: {e}")
         return None
 
     if result.get("ambiguous") and result.get("question"):
