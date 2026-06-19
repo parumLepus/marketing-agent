@@ -177,6 +177,8 @@ if "pending_notion_action" not in st.session_state:
     st.session_state.pending_notion_action = None
 if "auto_running" not in st.session_state:
     st.session_state.auto_running = False
+if "awaiting_audience_answer" not in st.session_state:
+    st.session_state.awaiting_audience_answer = False
 if "messages" not in st.session_state:
     st.session_state.messages = [{
         "role": "assistant",
@@ -764,10 +766,20 @@ if user_input:
         with st.chat_message("assistant"):
             with st.spinner("Thinking and pulling data..."):
                 try:
-                    clarifying_question = check_audience_ambiguity(
-                        st.session_state.messages, st.session_state.user_openai_key
-                    )
+                    # Skip the check on a direct reply to a question this
+                    # same check just asked - re-running it on the answer
+                    # itself was causing it to re-litigate ("tenants" got
+                    # met with another audience question) instead of
+                    # accepting the answer.
+                    if st.session_state.awaiting_audience_answer:
+                        st.session_state.awaiting_audience_answer = False
+                        clarifying_question = None
+                    else:
+                        clarifying_question = check_audience_ambiguity(
+                            st.session_state.messages, st.session_state.user_openai_key
+                        )
                     if clarifying_question:
+                        st.session_state.awaiting_audience_answer = True
                         st.markdown(clarifying_question)
                         st.session_state.messages.append({"role": "assistant", "content": clarifying_question})
                     else:
