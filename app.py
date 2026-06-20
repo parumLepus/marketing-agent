@@ -684,6 +684,7 @@ if active_provider == "google":
         "access_type": "offline",
         "prompt": "consent",
         "state": state_data,
+        "hl": "en",
     }
 
     auth_url = "https://accounts.google.com/o/oauth2/auth?" + urllib.parse.urlencode(params)
