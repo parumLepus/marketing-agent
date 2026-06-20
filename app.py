@@ -137,13 +137,21 @@ _STASH_DIR = os.path.join(tempfile.gettempdir(), "oauth_stash")
 os.makedirs(_STASH_DIR, exist_ok=True)
 
 # Random per-process key, held in memory only - never written to disk or
-# st.secrets. The stash only needs to survive within this same running
-# process anyway (it's read back moments later by the OAuth redirect), so
-# there's no need for the key to persist past a restart. This means even
-# direct filesystem access to the stash file isn't enough to read the
-# OpenAI key/chat history sitting in it - the key only exists in this
-# process's memory.
-_STASH_FERNET = Fernet(Fernet.generate_key())
+# st.secrets. Must use st.cache_resource, not a plain module-level
+# assignment: Streamlit re-executes the whole script top-to-bottom on every
+# rerun, so a plain assignment generated a fresh random key each time,
+# meaning the key used to encrypt the stash never matched the key used to
+# decrypt it moments later. cache_resource runs this exactly once per
+# server process and shares that single result across every rerun and
+# session, which is what's actually needed here - the stash only has to
+# survive within this same running process anyway (it's read back moments
+# later by the OAuth redirect), so the key not surviving a restart is fine.
+@st.cache_resource
+def _get_stash_fernet():
+    return Fernet(Fernet.generate_key())
+
+
+_STASH_FERNET = _get_stash_fernet()
 
 
 def _stash_path(stash_id: str) -> str:
