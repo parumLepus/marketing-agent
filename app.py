@@ -131,9 +131,19 @@ if "session_id" not in st.session_state:
 # root callback path was getting stripped by Streamlit Cloud before any
 # Python code ran, which is what broke this same approach previously.
 import tempfile
+from cryptography.fernet import Fernet
 
 _STASH_DIR = os.path.join(tempfile.gettempdir(), "oauth_stash")
 os.makedirs(_STASH_DIR, exist_ok=True)
+
+# Random per-process key, held in memory only - never written to disk or
+# st.secrets. The stash only needs to survive within this same running
+# process anyway (it's read back moments later by the OAuth redirect), so
+# there's no need for the key to persist past a restart. This means even
+# direct filesystem access to the stash file isn't enough to read the
+# OpenAI key/chat history sitting in it - the key only exists in this
+# process's memory.
+_STASH_FERNET = Fernet(Fernet.generate_key())
 
 
 def _stash_path(stash_id: str) -> str:
@@ -142,17 +152,19 @@ def _stash_path(stash_id: str) -> str:
 
 
 def oauth_stash_set(stash_id: str, data: dict):
-    """Write key/messages/pending_action to a stash file, keyed by stash_id."""
-    with open(_stash_path(stash_id), "w") as f:
-        json.dump(data, f)
+    """Write key/messages/pending_action to an encrypted stash file, keyed by stash_id."""
+    encrypted = _STASH_FERNET.encrypt(json.dumps(data).encode())
+    with open(_stash_path(stash_id), "wb") as f:
+        f.write(encrypted)
 
 
 def oauth_stash_pop(stash_id: str) -> dict:
-    """Read and delete a stash file, returning its contents (or {} if missing)."""
+    """Read, decrypt, and delete a stash file, returning its contents (or {} if missing)."""
     path = _stash_path(stash_id)
     try:
-        with open(path, "r") as f:
-            data = json.load(f)
+        with open(path, "rb") as f:
+            encrypted = f.read()
+        data = json.loads(_STASH_FERNET.decrypt(encrypted))
         os.remove(path)
         return data
     except Exception:

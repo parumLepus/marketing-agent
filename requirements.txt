@@ -18,3 +18,4 @@ google-auth-oauthlib
 google-auth-httplib2
 google-api-python-client
 protobuf==6.33.6
+cryptography
