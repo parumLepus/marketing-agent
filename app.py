@@ -105,6 +105,13 @@ REDIRECT_URI = st.secrets.get("REDIRECT_URI", os.getenv("REDIRECT_URI", "http://
 NOTION_CLIENT_ID = st.secrets.get("NOTION_CLIENT_ID", os.getenv("NOTION_CLIENT_ID"))
 NOTION_CLIENT_SECRET = st.secrets.get("NOTION_CLIENT_SECRET", os.getenv("NOTION_CLIENT_SECRET"))
 
+# Single shared key, paid for by the app owner - users no longer bring their
+# own. MAX_MESSAGES_PER_SESSION exists because of that: with one shared key
+# and no per-user key to throttle abuse, an unbounded chat could run up an
+# unbounded bill.
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+MAX_MESSAGES_PER_SESSION = 30
+
 # Load Google credentials: from st.secrets on Cloud, from file locally
 if "google" in st.secrets:
     GOOGLE_CLIENT_ID = st.secrets["google"]["client_id"]
@@ -189,8 +196,8 @@ if "notion_token" not in st.session_state:
     st.session_state.notion_token = None
 if "notion_page_id" not in st.session_state:
     st.session_state.notion_page_id = None
-if "user_openai_key" not in st.session_state:
-    st.session_state.user_openai_key = ""
+if "message_count" not in st.session_state:
+    st.session_state.message_count = 0
 if "generated_images" not in st.session_state:
     st.session_state.generated_images = {}
 if "show_google_success" not in st.session_state:
@@ -262,7 +269,7 @@ def build_current_agent():
     """Build a fresh agent wired to this session's current credentials."""
     return build_agent(
         creds=st.session_state.creds,
-        openai_api_key=st.session_state.user_openai_key,
+        openai_api_key=OPENAI_API_KEY,
         notion_token=st.session_state.notion_token,
         notion_page_id=st.session_state.notion_page_id,
     )
@@ -272,7 +279,6 @@ def _current_creds_fingerprint():
     """Snapshot of every credential the agent's tools are built from, to detect when it needs rebuilding."""
     google_token = getattr(st.session_state.creds, "token", None) if st.session_state.creds else None
     return (
-        st.session_state.user_openai_key,
         google_token,
         st.session_state.notion_token,
         st.session_state.notion_page_id,
@@ -430,15 +436,12 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
         try:
             state_data = json.loads(raw_state)
         except Exception:
-            if raw_state.startswith("sk-"):
-                st.session_state.user_openai_key = raw_state
+            pass
 
     provider = state_data.get("provider", "google")  # default keeps old links working
     stash_id = state_data.get("stash_id")
     stashed = oauth_stash_pop(stash_id) if stash_id else {}
 
-    if stashed.get("key"):
-        st.session_state.user_openai_key = stashed["key"]
     if stashed.get("messages") and len(st.session_state.messages) <= 1:
         st.session_state.messages = stashed["messages"]
     if stashed.get("pending_action"):
@@ -498,47 +501,14 @@ if "code" in query_params and not (st.session_state.google_connected and st.sess
         except Exception as e:
             st.error(f"Notion OAuth failed: {e}")
 
-    # Rerun once so the restored key/messages/pending_action (and the
-    # OAuth connection flags) are reflected before the API key check below.
+    # Rerun once so the restored messages/pending_action (and the OAuth
+    # connection flags) are reflected before the agent is built below.
     st.query_params.clear()
     st.rerun()
 
-# -------------------------
-# OPENAI API KEY CHECK + VALIDATION
-# -------------------------
-def validate_openai_key(key: str) -> bool:
-    """Check the key actually works by calling OpenAI's models endpoint."""
-    try:
-        resp = http_requests.get(
-            "https://api.openai.com/v1/models",
-            headers={"Authorization": f"Bearer {key}"},
-            timeout=5
-        )
-        return resp.status_code == 200
-    except Exception:
-        return False
-
-if not st.session_state.user_openai_key:
-    st.warning("⚠️ Please enter your OpenAI API key to use this app.")
-    key_input = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        placeholder="sk-...",
-        help="Your key is never stored — it lives only in your browser session."
-    )
-    if key_input:
-        if not key_input.startswith("sk-"):
-            st.error("❌ Invalid key format — must start with 'sk-'")
-            st.stop()
-        with st.spinner("Validating key..."):
-            if validate_openai_key(key_input):
-                st.session_state.user_openai_key = key_input
-                st.rerun()
-            else:
-                st.error("❌ Key is invalid or has no credits — please check and try again.")
-                st.stop()
-    else:
-        st.stop()
+if not OPENAI_API_KEY:
+    st.error("The app's OpenAI API key isn't configured. Set OPENAI_API_KEY in secrets/env.")
+    st.stop()
 
 # -------------------------
 # AGENT INIT / REBUILD — single source of truth
@@ -667,7 +637,6 @@ if active_provider == "google":
 
     _stash_id = secrets.token_hex(12)
     oauth_stash_set(_stash_id, {
-        "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_stash(st.session_state.messages),
         "pending_action": st.session_state.pending_google_action,
     })
@@ -699,7 +668,6 @@ elif active_provider == "notion":
 
     _stash_id = secrets.token_hex(12)
     oauth_stash_set(_stash_id, {
-        "key": st.session_state.user_openai_key,
         "messages": trim_messages_for_stash(st.session_state.messages),
         "pending_action": st.session_state.pending_notion_action,
     })
@@ -753,9 +721,14 @@ if uploaded_file is not None:
 # -------------------------
 # CHAT INPUT
 # -------------------------
-user_input = st.chat_input("Describe your goals or ask for a marketing plan...")
+limit_reached = st.session_state.message_count >= MAX_MESSAGES_PER_SESSION
+if limit_reached:
+    st.info(f"You've reached the {MAX_MESSAGES_PER_SESSION}-message limit for this test session. Refresh the page to start a new one.")
+
+user_input = st.chat_input("Describe your goals or ask for a marketing plan...", disabled=limit_reached)
 
 if user_input:
+    st.session_state.message_count += 1
     st.session_state.messages.append({"role": "user", "content": user_input})
 
     st.session_state.pending_image_for_prompt = st.session_state.get("uploaded_image")
