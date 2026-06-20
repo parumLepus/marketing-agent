@@ -17,7 +17,7 @@ from tools.search_tool import search_marketing_trends
 from tools.plan_tool import format_marketing_plan
 from tools.notion_tool import make_content_calendar_tool, make_update_content_calendar_tool
 from tools.knowledge_tool import search_knowledge_base
-from tools.company_info_tool import get_company_context, store_company_context, clear_context
+from tools.company_info_tool import make_company_context_tools
 from tools.google_docs_tool import make_google_doc_tool, export_as_markdown, export_as_html
 from tools.image_generation_tool import make_image_generation_tool
 
@@ -86,6 +86,7 @@ def build_agent(creds=None, openai_api_key=None, notion_token=None, notion_page_
     # called — see tools/notion_tool.py.
     content_calendar_tool = make_content_calendar_tool(notion_token, notion_page_id)
     update_content_calendar_tool = make_update_content_calendar_tool(notion_token)
+    store_company_context, get_company_context, clear_context = make_company_context_tools()
 
     tools = [
         search_marketing_trends,
